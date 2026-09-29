@@ -15,7 +15,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.drawingapp.ui.theme.DrawingAppTheme
@@ -39,7 +46,11 @@ enum class BrushShape{
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CanvasScreen() {
-    var brushShape : BrushShape
+    var brushShape by remember { mutableStateOf(BrushShape.LINE) }
+    var brushSize by remember { mutableStateOf(4f) }
+    var strokes by remember { mutableStateOf(listOf<List<Offset>>()) }
+    var currentStroke by remember { mutableStateOf<List<Offset>>(emptyList()) }
+    var currentColor by remember { mutableStateOf(Color.Red) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize().safeContentPadding(),
@@ -63,14 +74,43 @@ fun CanvasScreen() {
                 .pointerInput(Unit)
                 {
                     detectDragGestures(
-                        onDragStart = {},
-                        onDrag = { change, _ -> },
-                        onDragEnd = {}
+                        onDragStart = { offset ->
+                            currentStroke = listOf(offset)
+                            strokes = strokes + listOf(currentStroke)
+                        },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            currentStroke = currentStroke + change.position
+                            strokes = strokes.dropLast(1) + listOf(currentStroke)
+                        },
+                        onDragEnd = { currentStroke = emptyList() }
                     )
                 }
         )
         {
-
+            strokes.forEach { stroke ->
+                when (brushShape) {
+                    BrushShape.LINE -> {
+                        for (i in 0 until stroke.size - 1) {
+                            drawLine(currentColor, stroke[i], stroke[i + 1], brushSize)
+                        }
+                    }
+                    BrushShape.CIRCLE -> {
+                        stroke.forEach{ point ->
+                            drawCircle(currentColor, brushSize / 2, point)
+                        }
+                    }
+                    BrushShape.SQUARE -> {
+                        stroke.forEach { point ->
+                            drawRect(
+                                currentColor,
+                                Offset(point.x - brushSize / 2, point.y - brushSize / 2),
+                                Size(brushSize / 2, brushSize / 2)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
