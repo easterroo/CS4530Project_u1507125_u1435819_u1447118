@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,7 +34,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DrawingAppTheme {
-
+                CanvasScreen()
             }
         }
     }
@@ -47,7 +48,7 @@ enum class BrushShape{
 @Composable
 fun CanvasScreen() {
     var brushShape by remember { mutableStateOf(BrushShape.LINE) }
-    var brushSize by remember { mutableStateOf(4f) }
+    var brushSize by remember { mutableFloatStateOf(16f) }
     var strokes by remember { mutableStateOf(listOf<List<Offset>>()) }
     var currentStroke by remember { mutableStateOf<List<Offset>>(emptyList()) }
     var currentColor by remember { mutableStateOf(Color.Red) }
@@ -97,15 +98,15 @@ fun CanvasScreen() {
                     }
                     BrushShape.CIRCLE -> {
                         stroke.forEach{ point ->
-                            drawCircle(currentColor, brushSize / 2, point)
+                            drawCircle(currentColor, brushSize, point)
                         }
                     }
                     BrushShape.SQUARE -> {
                         stroke.forEach { point ->
                             drawRect(
                                 currentColor,
-                                Offset(point.x - brushSize / 2, point.y - brushSize / 2),
-                                Size(brushSize / 2, brushSize / 2)
+                                Offset(point.x - brushSize, point.y - brushSize),
+                                Size(brushSize, brushSize)
                             )
                         }
                     }
