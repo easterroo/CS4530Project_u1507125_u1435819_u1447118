@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.compose.rememberNavController
 import com.example.drawingapp.ui.theme.DrawingAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -36,8 +37,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DrawingAppTheme {
-                //LibraryScreen()
-                CanvasScreen()
+                AppNavigation()
                 BrushSplashScreen()
             }
         }
