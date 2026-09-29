@@ -26,15 +26,19 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.drawingapp.ui.theme.DrawingAppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             DrawingAppTheme {
+                //LibraryScreen()
                 CanvasScreen()
+                BrushSplashScreen()
             }
         }
     }

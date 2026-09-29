@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.DrawingApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.DrawingApp.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_brush</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.DrawingApp</item>
+    </style>
 </resources>
