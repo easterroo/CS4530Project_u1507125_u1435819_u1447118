@@ -81,6 +81,9 @@ fun CanvasScreen() {
                         },
                         onDrag = { change, _ ->
                             change.consume()
+                            change.historical.forEach { historical ->
+                                currentStroke = currentStroke + historical.position
+                            }
                             currentStroke = currentStroke + change.position
                             strokes = strokes.dropLast(1) + listOf(currentStroke)
                         },
