@@ -27,8 +27,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.drawingapp.ui.theme.DrawingAppTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,14 +52,42 @@ enum class BrushShape{
     LINE, CIRCLE, SQUARE
 }
 
+class CanvasViewModel : ViewModel() {
+    private val _strokes = MutableStateFlow(listOf<List<Offset>>())
+    private val _brushSize = MutableStateFlow(16f)
+    private val _brushShape = MutableStateFlow(BrushShape.LINE)
+    private val _currentColor = MutableStateFlow(Color.Red)
+
+    val strokes : StateFlow<List<List<Offset>>> = _strokes
+    val brushSize : StateFlow<Float> = _brushSize
+    val brushShape : StateFlow<BrushShape> = _brushShape
+    val currentColor : StateFlow<Color> = _currentColor
+
+    fun addStroke(currentStroke: List<Offset>) {
+        _strokes.value += listOf(currentStroke)
+    }
+
+    fun setBrushSize(newBrushSize: Float) {
+        _brushSize.value = newBrushSize
+    }
+
+    fun setBrushShape(newBrushShape: BrushShape) {
+        _brushShape.value = newBrushShape
+    }
+
+    fun setColor(newColor: Color) {
+        _currentColor.value = newColor
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CanvasScreen() {
-    var brushShape by remember { mutableStateOf(BrushShape.LINE) }
-    var brushSize by remember { mutableFloatStateOf(16f) }
-    var strokes by remember { mutableStateOf(listOf<List<Offset>>()) }
+fun CanvasScreen(canvasViewModel: CanvasViewModel) {
+    val brushShape by canvasViewModel.brushShape.collectAsStateWithLifecycle()
+    val brushSize by canvasViewModel.brushSize.collectAsStateWithLifecycle()
+    val currentColor by canvasViewModel.currentColor.collectAsStateWithLifecycle()
+    val strokes by canvasViewModel.strokes.collectAsStateWithLifecycle()
     var currentStroke by remember { mutableStateOf<List<Offset>>(emptyList()) }
-    var currentColor by remember { mutableStateOf(Color.Red) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize().safeContentPadding(),
@@ -81,7 +113,7 @@ fun CanvasScreen() {
                     detectDragGestures(
                         onDragStart = { offset ->
                             currentStroke = listOf(offset)
-                            strokes = strokes + listOf(currentStroke)
+                            canvasViewModel.addStroke(currentStroke)
                         },
                         onDrag = { change, _ ->
                             change.consume()
@@ -89,7 +121,7 @@ fun CanvasScreen() {
                                 currentStroke = currentStroke + historical.position
                             }
                             currentStroke = currentStroke + change.position
-                            strokes = strokes.dropLast(1) + listOf(currentStroke)
+                            canvasViewModel.addStroke(currentStroke)
                         },
                         onDragEnd = { currentStroke = emptyList() }
                     )
