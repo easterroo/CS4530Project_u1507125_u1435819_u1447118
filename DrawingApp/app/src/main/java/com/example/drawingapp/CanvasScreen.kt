@@ -1,20 +1,27 @@
 package com.example.drawingapp
 
+import android.graphics.drawable.Icon
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.materialIcon
 import androidx.compose.material.icons.outlined.Brush
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,25 +38,67 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CanvasScreen(canvasViewModel: CanvasViewModel) {
+    val drawing by canvasViewModel.drawing.collectAsStateWithLifecycle()
     val brushShape by canvasViewModel.brushShape.collectAsStateWithLifecycle()
     val brushSize by canvasViewModel.brushSize.collectAsStateWithLifecycle()
     val currentColor by canvasViewModel.currentColor.collectAsStateWithLifecycle()
-    val strokes by canvasViewModel.strokes.collectAsStateWithLifecycle()
+    val strokes = drawing.strokes
+    
     var eraseMode by remember { mutableStateOf(false) }
     var currentStrokeList by remember { mutableStateOf<List<Offset>>(emptyList()) }
+
+    var isEditingTitle by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize().safeContentPadding(),
         topBar = {
             TopAppBar(
-                title = { Text("Canvas") },
-                navigationIcon = {
-                    //TODO: put menu here
+                title = { 
+                    if (isEditingTitle) {
+                        TextField(
+                            value = drawing.title,
+                            onValueChange = { canvasViewModel.updateTitle(it) },
+                            textStyle = TextStyle(fontSize = 22.sp),
+                            singleLine = true
+                        )
+
+                    } else {
+                        Text(
+                            text = drawing.title,
+                            modifier = Modifier.clickable { isEditingTitle = true }
+                        )
+                    }
+                },
+                actions = {
+                    if (isEditingTitle) {
+                        TextButton(
+                            onClick = { 
+                                isEditingTitle = false
+                            }
+                        ) {
+                            Text("Done")
+                        }
+
+                    } else {
+                        IconButton(
+                            content = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Save,
+                                    contentDescription = "Save"
+                                )
+                                      },
+                            onClick = {
+                                canvasViewModel.saveCanvas()
+                            }
+                        )
+                    }
                 }
             )
         },
@@ -107,12 +156,12 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel) {
                             onDragStart = { offset ->
                                 currentStrokeList = listOf(offset)
 
-                                val newStroke = CanvasViewModel.Stroke().apply {
-                                    setSize(brushSize)
-                                    setShape(brushShape)
-                                    setColor(if (eraseMode) Color.Transparent else currentColor)
-                                    setStroke(currentStrokeList)
-                                }
+                                val newStroke = Stroke(
+                                    stroke = currentStrokeList,
+                                    shape = brushShape,
+                                    size = brushSize,
+                                    color = if (eraseMode) Color.Transparent else currentColor
+                                )
 
                                 canvasViewModel.addStroke(newStroke)
                             },
@@ -120,12 +169,12 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel) {
                                 val historicalPoints = change.historical.map { it.position }
                                 currentStrokeList = currentStrokeList + historicalPoints + change.position
 
-                                val updatedStroke = CanvasViewModel.Stroke().apply {
-                                    setSize(brushSize)
-                                    setShape(brushShape)
-                                    setColor(if (eraseMode) Color.Transparent else currentColor)
-                                    setStroke(currentStrokeList)
-                                }
+                                val updatedStroke = Stroke(
+                                    stroke = currentStrokeList,
+                                    shape = brushShape,
+                                    size = brushSize,
+                                    color = if (eraseMode) Color.Transparent else currentColor
+                                )
 
                                 canvasViewModel.updateLastStroke(updatedStroke)
                             },
@@ -134,12 +183,12 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel) {
                     }
             )
             {
-                strokes.forEach { stroke ->
-                    val color = stroke.strokeColor.value
-                    val size = stroke.strokeSize.value
-                    val strokeList = stroke.stroke.value
+                strokes.forEach {
+                    val color = it.color
+                    val size = it.size
+                    val strokeList = it.stroke
 
-                    when (stroke.strokeShape.value) {
+                    when (it.shape) {
                         BrushShape.LINE -> {
                             for (i in 0 until strokeList.size - 1) {
                                 drawLine(

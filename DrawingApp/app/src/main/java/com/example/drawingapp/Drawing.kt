@@ -1,5 +1,20 @@
 package com.example.drawingapp
 
-class Drawing (val id: Int, val title: String) {
-    //TODO: functions to save strokes on canvas onto an image bitmap, and open a drawing onto canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+
+data class Drawing (val id: Int = 0, val title: String = "Untitled Drawing",
+                    val strokes: List<Stroke> = listOf()) {
+
+}
+
+data class Stroke(
+    val stroke: List<Offset>,
+    val shape: BrushShape,
+    val size: Float,
+    val color: Color
+)
+
+enum class BrushShape{
+    LINE, CIRCLE, SQUARE
 }
