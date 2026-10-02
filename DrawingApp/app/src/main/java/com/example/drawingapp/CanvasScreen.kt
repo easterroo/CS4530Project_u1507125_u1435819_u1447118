@@ -41,7 +41,6 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel) {
     val currentColor by canvasViewModel.currentColor.collectAsStateWithLifecycle()
     val strokes by canvasViewModel.strokes.collectAsStateWithLifecycle()
     var eraseMode by remember { mutableStateOf(false) }
-    var currentStroke by remember { mutableStateOf(Stroke()) }
     var currentStrokeList by remember { mutableStateOf<List<Offset>>(emptyList()) }
 
     Scaffold(
@@ -108,13 +107,12 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel) {
                             onDragStart = { offset ->
                                 currentStrokeList = listOf(offset)
 
-                                val newStroke = Stroke().apply {
+                                val newStroke = CanvasViewModel.Stroke().apply {
                                     setSize(brushSize)
                                     setShape(brushShape)
                                     setColor(if (eraseMode) Color.Transparent else currentColor)
                                     setStroke(currentStrokeList)
                                 }
-                                currentStroke = newStroke
 
                                 canvasViewModel.addStroke(newStroke)
                             },
@@ -122,13 +120,12 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel) {
                                 val historicalPoints = change.historical.map { it.position }
                                 currentStrokeList = currentStrokeList + historicalPoints + change.position
 
-                                val updatedStroke = Stroke().apply {
+                                val updatedStroke = CanvasViewModel.Stroke().apply {
                                     setSize(brushSize)
                                     setShape(brushShape)
                                     setColor(if (eraseMode) Color.Transparent else currentColor)
                                     setStroke(currentStrokeList)
                                 }
-                                currentStroke = updatedStroke
 
                                 canvasViewModel.updateLastStroke(updatedStroke)
                             },

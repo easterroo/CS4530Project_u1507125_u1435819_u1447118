@@ -16,12 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.ui.text.style.TextOverflow
 
-data class Drawing (
-    val id: Int,
-    val title: String
-    // TODO: Class that represents drawing
-)
-
 class LibraryViewModel : ViewModel()
 {
     private val drawings = MutableStateFlow(listOf<Drawing>())
