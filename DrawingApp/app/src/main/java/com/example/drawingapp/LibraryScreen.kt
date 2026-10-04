@@ -1,5 +1,6 @@
 package com.example.drawingapp
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -14,12 +15,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.drawscope.withTransform
 
 class LibraryViewModel : ViewModel()
 {
@@ -124,7 +131,7 @@ private fun DrawingCard(
                 .clickable(onClick = onOpen)
         ) {
             Box(Modifier.fillMaxSize()) {
-                // TODO: Thumbnail of drawing
+                DrawingThumbnail(drawing, Modifier.fillMaxSize())
                 Box(Modifier.align(Alignment.TopEnd)) {
                     IconButton(
                         onClick = { menuOpen = true },
@@ -158,5 +165,27 @@ private fun DrawingCard(
                 .padding(top = 4.dp)
                 .align(Alignment.CenterHorizontally)
         )
+    }
+}
+
+@Composable
+fun DrawingThumbnail(drawing: Drawing, modifier: Modifier = Modifier) {
+    Canvas(
+        modifier = modifier
+            .background(Color.White)
+            .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen) // so the eraser works
+    ) {
+        // Scale the saved canvas to fit the card, centered
+        val s = minOf(size.width / drawing.canvasWidth, size.height / drawing.canvasHeight)
+        val dx = (size.width - drawing.canvasWidth * s) / 2f
+        val dy = (size.height - drawing.canvasHeight * s) / 2f
+
+        withTransform({
+            translate(dx, dy)
+            scale(s, s, pivot = Offset.Zero)
+            clipRect(0f, 0f, drawing.canvasWidth, drawing.canvasHeight)
+        }) {
+            drawStrokes(drawing.strokes)
+        }
     }
 }

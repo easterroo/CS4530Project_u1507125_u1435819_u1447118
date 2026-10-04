@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -190,6 +191,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
+                    .onSizeChanged{ canvasViewModel.setCanvasSize(it.width.toFloat(), it.height.toFloat())}
                     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                     .pointerInput(Unit)
                     {
@@ -224,45 +226,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                     }
             )
             {
-                strokes.forEach {
-                    val color = it.color
-                    val size = it.size
-                    val strokeList = it.stroke
-
-                    when (it.shape) {
-                        BrushShape.LINE -> {
-                            for (i in 0 until strokeList.size - 1) {
-                                drawLine(
-                                    color = color,
-                                    strokeList[i], strokeList[i + 1], size,
-                                    blendMode = if (color == Color.Transparent) BlendMode.Clear
-                                    else BlendMode.SrcOver
-                                )
-                            }
-                        }
-                        BrushShape.CIRCLE -> {
-                            strokeList.forEach{ point ->
-                                drawCircle(
-                                    color = color,
-                                    size / 2, point,
-                                    blendMode = if (color == Color.Transparent) BlendMode.Clear
-                                    else BlendMode.SrcOver
-                                )
-                            }
-                        }
-                        BrushShape.SQUARE -> {
-                            strokeList.forEach { point ->
-                                drawRect(
-                                    color = color,
-                                    Offset(point.x - size / 2, point.y - size / 2),
-                                    Size(size, size),
-                                    blendMode = if (color == Color.Transparent) BlendMode.Clear
-                                    else BlendMode.SrcOver
-                                )
-                            }
-                        }
-                    }
-                }
+                drawStrokes(strokes)
             }
         }
     }

@@ -63,23 +63,14 @@ class CanvasViewModel : ViewModel() {
         }
     }
 
-
-    fun saveCanvas() {
-        val currentDrawing = _drawing.value
-        //launch scope {
-//            if (currentDrawing.id == 0)
-//                //Insert current drawing into db
-//            else
-                //update currentDrawing in db
-//        }
-    }
-
     fun setCanvasSize(width: Float, height: Float) {
         _drawing.update { it.copy(canvasWidth = width, canvasHeight = height )}
     }
 
     fun openDrawing(drawing: Drawing?) {
-        _drawing.value = drawing ?: Drawing()
+        _drawing.update { current ->
+            drawing ?: Drawing(canvasWidth = current.canvasWidth, canvasHeight = current.canvasHeight)
+        }
     }
 
     fun setId(id: Int) {
