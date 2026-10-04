@@ -73,5 +73,17 @@ class CanvasViewModel : ViewModel() {
                 //update currentDrawing in db
 //        }
     }
+
+    fun setCanvasSize(width: Float, height: Float) {
+        _drawing.update { it.copy(canvasWidth = width, canvasHeight = height )}
+    }
+
+    fun openDrawing(drawing: Drawing?) {
+        _drawing.value = drawing ?: Drawing()
+    }
+
+    fun setId(id: Int) {
+        _drawing.update {it.copy(id = id)}
+    }
 }
 

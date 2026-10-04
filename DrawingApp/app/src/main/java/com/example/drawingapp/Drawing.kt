@@ -3,8 +3,12 @@ package com.example.drawingapp
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 
-data class Drawing (val id: Int = 0, val title: String = "Untitled Drawing",
-                    val strokes: List<Stroke> = listOf()) {
+data class Drawing (
+    val id: Int = 0,
+    val title: String = "Untitled Drawing",
+    val strokes: List<Stroke> = listOf(),
+    val canvasWidth: Float = 1f,
+    val canvasHeight: Float = 1f) {
 
 }
 

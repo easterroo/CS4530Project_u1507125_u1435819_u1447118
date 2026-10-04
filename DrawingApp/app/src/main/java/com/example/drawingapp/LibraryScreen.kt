@@ -15,11 +15,43 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class LibraryViewModel : ViewModel()
 {
     private val drawings = MutableStateFlow(listOf<Drawing>())
+    val drawingsSnapshots : StateFlow<List<Drawing>> = drawings.asStateFlow()
+
+    private var nextId = 1
+
     // TODO: Add functions and other params for the view model
+
+    /** Returns drawing from selected ID */
+    fun getDrawing(id: Int): Drawing? {
+        return drawings.value.find {it.id == id}
+    }
+
+    /** Saves drawing as a new one if ID doesn't exist or updates an existing one */
+    fun saveDrawing(drawing: Drawing): Drawing {
+        val saved = if (drawing.id == 0) drawing.copy(id = nextId++) else drawing
+
+        drawings.update { list->
+            if (list.any {it.id == saved.id }) list.map {
+                if (it.id == saved.id) saved else it
+            }
+            else list + saved
+        }
+        return saved
+    }
+
+    /** Deleted drawing */
+    fun deleteDrawing(drawing: Drawing) {
+        drawings.value -= drawing
+    }
 }
 
 /**
@@ -27,9 +59,9 @@ class LibraryViewModel : ViewModel()
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(onOpenDrawing: (Int) -> Unit = {},
+fun LibraryScreen(myVM: LibraryViewModel = viewModel(), onOpenDrawing: (Int) -> Unit = {},
                   onNewDrawing: () -> Unit = {}) {
-    val drawings = remember { List(6) {Drawing(it, "Drawing")}.toMutableStateList() }
+    val drawings by myVM.drawingsSnapshots.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -40,7 +72,6 @@ fun LibraryScreen(onOpenDrawing: (Int) -> Unit = {},
                 title = {
                     Column {
                         Text("My Drawings")
-                        // TODO: Change this nav bar/buttons and add more later
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             TextButton(onClick = onNewDrawing) { Text("New Drawing") }
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Select")}
@@ -63,7 +94,7 @@ fun LibraryScreen(onOpenDrawing: (Int) -> Unit = {},
                 DrawingCard(
                     drawing = drawing,
                     onOpen = { onOpenDrawing(drawing.id) },
-                    onDelete = { drawings.remove(drawing) }
+                    onDelete = { myVM.deleteDrawing(drawing) }
                 )
             }
         }

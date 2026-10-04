@@ -57,7 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CanvasScreen(canvasViewModel: CanvasViewModel) {
+fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
     val drawing by canvasViewModel.drawing.collectAsStateWithLifecycle()
     val brushShape by canvasViewModel.brushShape.collectAsStateWithLifecycle()
     val brushSize by canvasViewModel.brushSize.collectAsStateWithLifecycle()
@@ -109,7 +109,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel) {
                                 )
                                       },
                             onClick = {
-                                canvasViewModel.saveCanvas()
+                                onSave(drawing)
                             }
                         )
                     }
