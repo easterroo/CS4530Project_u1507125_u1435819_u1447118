@@ -1,20 +1,15 @@
 package com.example.drawingapp
 
-import android.content.Context
-import android.util.JsonWriter
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.File
-import java.io.FileOutputStream
 
+/**
+ * ViewModel representing the Canvas and the information held in it, including brush size, stroke, and color information
+ */
 class CanvasViewModel : ViewModel() {
     private val _drawing = MutableStateFlow(Drawing())
     val drawing: StateFlow<Drawing> = _drawing.asStateFlow()
@@ -27,12 +22,14 @@ class CanvasViewModel : ViewModel() {
     val brushShape: StateFlow<BrushShape> = _brushShape.asStateFlow()
     val currentColor: StateFlow<Color> = _currentColor.asStateFlow()
 
+    /** Called when a stroke is drawn */
     fun addStroke(currentStroke: Stroke) {
         _drawing.update { currentDrawing ->
             currentDrawing.copy(strokes = currentDrawing.strokes + currentStroke)
         }
     }
 
+    /** Updates last stroke when dragged in drawing */
     fun updateLastStroke(updatedStroke: Stroke) {
         _drawing.update { currentDrawing ->
             if (currentDrawing.strokes.isNotEmpty()) {
@@ -45,34 +42,41 @@ class CanvasViewModel : ViewModel() {
         }
     }
 
+    /** Changes the brush size upon selection */
     fun setBrushSize(newBrushSize: Float) {
         _brushSize.value = newBrushSize
     }
 
+    /** Changes the brush shape upon selection */
     fun setBrushShape(newBrushShape: BrushShape) {
         _brushShape.value = newBrushShape
     }
 
+    /** Changes the brush color upon selection */
     fun setColor(newColor: Color) {
         _currentColor.value = newColor
     }
 
+    /** Changes and updates the drawing title */
     fun updateTitle(newTitle: String) {
         _drawing.update { currentDrawing ->
             currentDrawing.copy(title = newTitle)
         }
     }
 
+    /** Sets the canvas size; Used in opening the canvas compared to thumbnail */
     fun setCanvasSize(width: Float, height: Float) {
         _drawing.update { it.copy(canvasWidth = width, canvasHeight = height )}
     }
 
+    /** Opens the correct drawing with the saved strokes in the CanvasScreen */
     fun openDrawing(drawing: Drawing?) {
         _drawing.update { current ->
             drawing ?: Drawing(canvasWidth = current.canvasWidth, canvasHeight = current.canvasHeight)
         }
     }
 
+    /** Sets the ID for the canvas's drawing; TODO: Change with Room storage implementation */
     fun setId(id: Int) {
         _drawing.update {it.copy(id = id)}
     }

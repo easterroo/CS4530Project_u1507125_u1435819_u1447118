@@ -42,13 +42,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -56,6 +53,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
+/**
+ * Initializes the Canvas Screen that is used to draw on to update drawings
+ *
+ * @param canvasViewModel ViewModel used to save information that is changed through Canvas
+ * @param onSave Calls the correct navigation when save is clicked back to library screen
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
@@ -178,8 +181,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
         }
     )
     {
-            innerPadding ->
-
+        innerPadding ->
         // Prevent background of canvas from being erased
         Box(
             modifier = Modifier
@@ -232,6 +234,12 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
     }
 }
 
+/**
+ * Used to create set colors that can be selected to draw with
+ *
+ * @param color The selected color
+ * @param canvasViewModel ViewModel used to hold information, including the stroke color
+ */
 @Composable
 fun ColorSelectionButton(color: Color, canvasViewModel: CanvasViewModel) {
     Box(modifier = Modifier

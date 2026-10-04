@@ -28,14 +28,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.drawscope.withTransform
 
+/**
+ * ViewModel representing the drawings that are displayed in the library screen
+ */
 class LibraryViewModel : ViewModel()
 {
     private val drawings = MutableStateFlow(listOf<Drawing>())
     val drawingsSnapshots : StateFlow<List<Drawing>> = drawings.asStateFlow()
 
-    private var nextId = 1
-
-    // TODO: Add functions and other params for the view model
+    private var nextId = 1 // Using manual ID while we aren't using persistent storage; Change in next phase
 
     /** Returns drawing from selected ID */
     fun getDrawing(id: Int): Drawing? {
@@ -63,10 +64,15 @@ class LibraryViewModel : ViewModel()
 
 /**
  * Main library screen that allows you to add, edit, and delete drawings
+ *
+ * @param myVM ViewModel used to retrieve the drawings to display
+ * @param onOpenDrawing Calls the correct navigation path when clicked
+ * @param onNewDrawing Calls the correct navigation to new drawing
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(myVM: LibraryViewModel = viewModel(), onOpenDrawing: (Int) -> Unit = {},
+fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
+                  onOpenDrawing: (Int) -> Unit = {},
                   onNewDrawing: () -> Unit = {}) {
     val drawings by myVM.drawingsSnapshots.collectAsStateWithLifecycle()
 
@@ -124,6 +130,7 @@ private fun DrawingCard(
     var menuOpen by remember { mutableStateOf(false) }
 
     Column {
+        // Card with the selectable thumbnail and menu option
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -131,7 +138,7 @@ private fun DrawingCard(
                 .clickable(onClick = onOpen)
         ) {
             Box(Modifier.fillMaxSize()) {
-                DrawingThumbnail(drawing, Modifier.fillMaxSize())
+                DrawingThumbnail(drawing)
                 Box(Modifier.align(Alignment.TopEnd)) {
                     IconButton(
                         onClick = { menuOpen = true },
@@ -154,7 +161,7 @@ private fun DrawingCard(
                 }
             }
         }
-
+        // Text showing the drawing's title
         Text(
             text = drawing.title,
             style = MaterialTheme.typography.bodyMedium,
@@ -168,10 +175,16 @@ private fun DrawingCard(
     }
 }
 
+/**
+ * Helper method to create a thumbnail of the drawing to show in the library screen
+ *
+ * @param drawing The Drawing object to create a thumbnail from
+ */
 @Composable
-fun DrawingThumbnail(drawing: Drawing, modifier: Modifier = Modifier) {
+fun DrawingThumbnail(drawing: Drawing) {
     Canvas(
-        modifier = modifier
+        modifier = Modifier
+            .fillMaxSize()
             .background(Color.White)
             .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen) // so the eraser works
     ) {
