@@ -19,16 +19,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.outlined.Brush
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Square
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,6 +57,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,7 +84,9 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
     var colorSelectionMenu by remember { mutableStateOf(true) }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize().safeContentPadding(),
+        modifier = Modifier
+            .fillMaxSize()
+            .safeContentPadding(),
         topBar = {
             TopAppBar(
                 title = { 
@@ -175,6 +186,53 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                                 colorSelectionMenu = false
                             }
                         )
+                        BrushShapeSelectionButton(BrushShape.LINE, canvasViewModel::setBrushShape)
+                        BrushShapeSelectionButton(BrushShape.CIRCLE, canvasViewModel::setBrushShape)
+                        BrushShapeSelectionButton(BrushShape.SQUARE, canvasViewModel::setBrushShape)
+
+                        var expanded by remember { mutableStateOf(false) }
+                        val presetSizes = listOf("4", "8", "12", "16", "20", "24", "28", "32", "36", "40", "44", "48")
+                        var brushSizeInput by remember { mutableStateOf(brushSize.toInt().toString()) }
+
+                        Box(modifier = Modifier
+                            .width(105.dp)
+                            .border(width = 2.dp, color = LocalContentColor.current)
+                        )
+                        {
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = brushSizeInput,
+                                onValueChange = { newSize ->
+                                    brushSizeInput = newSize
+                                    if (newSize.all { it.isDigit() } && newSize.isNotEmpty() && newSize.length <= 2) {
+                                        canvasViewModel.setBrushSize(newSize.toFloat())
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                trailingIcon = {
+                                    IconButton(onClick = { expanded = !expanded }) {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                                    }
+                                }
+                            )
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                presetSizes.forEach { size ->
+                                    DropdownMenuItem(
+                                        text = { Text(size) },
+                                        onClick = {
+                                            brushSizeInput = size
+                                            expanded = false
+                                            canvasViewModel.setBrushSize(size.toFloat())
+                                        },
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                    )
+                                }
+                            }
+                        }
                     }
                 )
             }
@@ -193,7 +251,12 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .onSizeChanged{ canvasViewModel.setCanvasSize(it.width.toFloat(), it.height.toFloat())}
+                    .onSizeChanged {
+                        canvasViewModel.setCanvasSize(
+                            it.width.toFloat(),
+                            it.height.toFloat()
+                        )
+                    }
                     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                     .pointerInput(Unit)
                     {
@@ -212,7 +275,8 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                             },
                             onDrag = { change, _ ->
                                 val historicalPoints = change.historical.map { it.position }
-                                currentStrokeList = currentStrokeList + historicalPoints + change.position
+                                currentStrokeList =
+                                    currentStrokeList + historicalPoints + change.position
 
                                 val updatedStroke = Stroke(
                                     stroke = currentStrokeList,
@@ -269,8 +333,33 @@ fun ColorSelectionButton(color: Color, selectionFunction: (Color) -> Unit) {
  * Used to create set shapes that can be selected to draw with
  *
  * @param brushShape The selected brushShape
+ * @param selectionFunction the function used to select a brush shape
  */
 @Composable
-fun BrushShapeSelectionButton(brushShape: BrushShape, canvasViewModel: CanvasViewModel) {
-
+fun BrushShapeSelectionButton(brushShape: BrushShape, selectionFunction: (BrushShape) -> Unit) {
+    IconButton(
+        content = {
+            when (brushShape) {
+                BrushShape.LINE -> {
+                    Icon(
+                        painter = painterResource(R.drawable.line),
+                        contentDescription = "Eraser"
+                    )
+                }
+                BrushShape.CIRCLE -> {
+                    Icon(
+                        imageVector = Icons.Outlined.Circle,
+                        contentDescription = "Circle"
+                    )
+                }
+                BrushShape.SQUARE -> {
+                    Icon(
+                        imageVector = Icons.Outlined.Square,
+                        contentDescription = "Square"
+                    )
+                }
+            }
+        },
+        onClick = { selectionFunction(brushShape) }
+    )
 }
