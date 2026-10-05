@@ -136,17 +136,17 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     )
                     {
-                        ColorSelectionButton(Color.Red, canvasViewModel)
-                        ColorSelectionButton(Color(0xFFFF8000), canvasViewModel)
-                        ColorSelectionButton(Color.Yellow, canvasViewModel)
-                        ColorSelectionButton(Color.Green, canvasViewModel)
-                        ColorSelectionButton(Color.Blue, canvasViewModel)
-                        ColorSelectionButton(Color(0xFF87C3FA), canvasViewModel)
-                        ColorSelectionButton(Color(0xFF800080), canvasViewModel)
-                        ColorSelectionButton(Color(0xFF654321), canvasViewModel)
-                        ColorSelectionButton(Color.Magenta, canvasViewModel)
-                        ColorSelectionButton(Color.Black, canvasViewModel)
-                        ColorSelectionButton(Color.White, canvasViewModel)
+                        ColorSelectionButton(Color.Red, canvasViewModel::setColor)
+                        ColorSelectionButton(Color(0xFFFF8000), canvasViewModel::setColor)
+                        ColorSelectionButton(Color.Yellow, canvasViewModel::setColor)
+                        ColorSelectionButton(Color.Green, canvasViewModel::setColor)
+                        ColorSelectionButton(Color.Blue, canvasViewModel::setColor)
+                        ColorSelectionButton(Color(0xFF87C3FA), canvasViewModel::setColor)
+                        ColorSelectionButton(Color(0xFF800080), canvasViewModel::setColor)
+                        ColorSelectionButton(Color(0xFF654321), canvasViewModel::setColor)
+                        ColorSelectionButton(Color.Magenta, canvasViewModel::setColor)
+                        ColorSelectionButton(Color.Black, canvasViewModel::setColor)
+                        ColorSelectionButton(Color.White, canvasViewModel::setColor)
                     }
                 }
                 BottomAppBar(
@@ -237,11 +237,11 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
 /**
  * Used to create set colors that can be selected to draw with
  *
- * @param color The selected color
- * @param canvasViewModel ViewModel used to hold information, including the stroke color
+ * @param color The color to select
+ * @param selectionFunction the function used to select a color
  */
 @Composable
-fun ColorSelectionButton(color: Color, canvasViewModel: CanvasViewModel) {
+fun ColorSelectionButton(color: Color, selectionFunction: (Color) -> Unit) {
     Box(modifier = Modifier
         .size(24.dp)
         .border(
@@ -260,7 +260,17 @@ fun ColorSelectionButton(color: Color, canvasViewModel: CanvasViewModel) {
                     contentDescription = "Red"
                 )
             },
-            onClick = { canvasViewModel.setColor(color) }
+            onClick = { selectionFunction(color) }
         )
     }
+}
+
+/**
+ * Used to create set shapes that can be selected to draw with
+ *
+ * @param brushShape The selected brushShape
+ */
+@Composable
+fun BrushShapeSelectionButton(brushShape: BrushShape, canvasViewModel: CanvasViewModel) {
+
 }
