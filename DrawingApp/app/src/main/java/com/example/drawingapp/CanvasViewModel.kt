@@ -66,7 +66,13 @@ class CanvasViewModel : ViewModel() {
 
     /** Sets the canvas size; Used in opening the canvas compared to thumbnail */
     fun setCanvasSize(width: Float, height: Float) {
-        _drawing.update { it.copy(canvasWidth = width, canvasHeight = height )}
+        _drawing.update { current ->
+            if (current.canvasWidth <= 1f || current.canvasHeight <= 1f) {
+                current.copy(canvasWidth = width, canvasHeight = height)
+            } else {
+                current
+            }
+        }
     }
 
     /** Opens the correct drawing with the saved strokes in the CanvasScreen */

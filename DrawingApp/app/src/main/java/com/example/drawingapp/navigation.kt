@@ -28,7 +28,16 @@ fun AppNavigation() {
             val id = backStackEntry.arguments?.getString("id")
 
             LaunchedEffect(id) {
-                canvasViewModel.openDrawing(id?.toIntOrNull()?.let {libraryViewModel.getDrawing(it) })
+                val drawingId = id?.toIntOrNull()
+                if (drawingId != null) {
+                    if (canvasViewModel.drawing.value.id != drawingId) {
+                        canvasViewModel.openDrawing(libraryViewModel.getDrawing(drawingId))
+                    }
+                } else {
+                    if (canvasViewModel.drawing.value.strokes.isEmpty() && canvasViewModel.drawing.value.id == 0) {
+                        canvasViewModel.openDrawing(null)
+                    }
+                }
             }
             CanvasScreen(
                 canvasViewModel = canvasViewModel,

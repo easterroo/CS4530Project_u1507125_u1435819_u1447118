@@ -58,6 +58,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -132,7 +133,10 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
             )
         },
         bottomBar = {
-            Column(modifier = Modifier.fillMaxWidth())
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            )
             {
                 AnimatedVisibility(
                     visible = colorSelectionMenu,
@@ -143,25 +147,34 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                     Row(modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceAround,
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     )
                     {
-                        ColorSelectionButton(Color.Red, canvasViewModel::setColor)
-                        ColorSelectionButton(Color(0xFFFF8000), canvasViewModel::setColor)
-                        ColorSelectionButton(Color.Yellow, canvasViewModel::setColor)
-                        ColorSelectionButton(Color.Green, canvasViewModel::setColor)
-                        ColorSelectionButton(Color.Blue, canvasViewModel::setColor)
-                        ColorSelectionButton(Color(0xFF87C3FA), canvasViewModel::setColor)
-                        ColorSelectionButton(Color(0xFF800080), canvasViewModel::setColor)
-                        ColorSelectionButton(Color(0xFF654321), canvasViewModel::setColor)
-                        ColorSelectionButton(Color.Magenta, canvasViewModel::setColor)
-                        ColorSelectionButton(Color.Black, canvasViewModel::setColor)
-                        ColorSelectionButton(Color.White, canvasViewModel::setColor)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ColorSelectionButton(Color.Red, canvasViewModel::setColor)
+                            ColorSelectionButton(Color(0xFFFF8000), canvasViewModel::setColor)
+                            ColorSelectionButton(Color.Yellow, canvasViewModel::setColor)
+                            ColorSelectionButton(Color.Green, canvasViewModel::setColor)
+                            ColorSelectionButton(Color.Blue, canvasViewModel::setColor)
+                            ColorSelectionButton(Color(0xFF87C3FA), canvasViewModel::setColor)
+                            ColorSelectionButton(Color(0xFF800080), canvasViewModel::setColor)
+                            ColorSelectionButton(Color(0xFF654321), canvasViewModel::setColor)
+                            ColorSelectionButton(Color.Magenta, canvasViewModel::setColor)
+                            ColorSelectionButton(Color.Black, canvasViewModel::setColor)
+                            ColorSelectionButton(Color.White, canvasViewModel::setColor)
+                        }
                     }
                 }
-                BottomAppBar(
-                    actions = {
+                BottomAppBar {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         IconButton(
                             content = {
                                 Icon(
@@ -234,7 +247,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                             }
                         }
                     }
-                )
+                }
             }
         }
     )
@@ -262,7 +275,18 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                     {
                         detectDragGestures(
                             onDragStart = { offset ->
-                                currentStrokeList = listOf(offset)
+                                val baseWidth = if (drawing.canvasWidth > 1f) drawing.canvasWidth else size.width.toFloat().coerceAtLeast(1f)
+                                val baseHeight = if (drawing.canvasHeight > 1f) drawing.canvasHeight else size.height.toFloat().coerceAtLeast(1f)
+                                val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
+                                val dx = (size.width.toFloat() - baseWidth * s) / 2f
+                                val dy = (size.height.toFloat() - baseHeight * s) / 2f
+
+                                val logicalOffset = Offset(
+                                    x = (offset.x - dx) / s,
+                                    y = (offset.y - dy) / s
+                                )
+
+                                currentStrokeList = listOf(logicalOffset)
 
                                 val newStroke = Stroke(
                                     stroke = currentStrokeList,
@@ -274,9 +298,25 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                                 canvasViewModel.addStroke(newStroke)
                             },
                             onDrag = { change, _ ->
-                                val historicalPoints = change.historical.map { it.position }
+                                val baseWidth = if (drawing.canvasWidth > 1f) drawing.canvasWidth else size.width.toFloat().coerceAtLeast(1f)
+                                val baseHeight = if (drawing.canvasHeight > 1f) drawing.canvasHeight else size.height.toFloat().coerceAtLeast(1f)
+                                val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
+                                val dx = (size.width.toFloat() - baseWidth * s) / 2f
+                                val dy = (size.height.toFloat() - baseHeight * s) / 2f
+
+                                val historicalPoints = change.historical.map { 
+                                    Offset(
+                                        x = (it.position.x - dx) / s,
+                                        y = (it.position.y - dy) / s
+                                    )
+                                }
+                                val currentLogical = Offset(
+                                    x = (change.position.x - dx) / s,
+                                    y = (change.position.y - dy) / s
+                                )
+
                                 currentStrokeList =
-                                    currentStrokeList + historicalPoints + change.position
+                                    currentStrokeList + historicalPoints + currentLogical
 
                                 val updatedStroke = Stroke(
                                     stroke = currentStrokeList,
@@ -292,7 +332,20 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                     }
             )
             {
-                drawStrokes(strokes)
+                val baseWidth = if (drawing.canvasWidth > 1f) drawing.canvasWidth else size.width.coerceAtLeast(1f)
+                val baseHeight = if (drawing.canvasHeight > 1f) drawing.canvasHeight else size.height.coerceAtLeast(1f)
+
+                val s = minOf(size.width / baseWidth, size.height / baseHeight)
+                val dx = (size.width - baseWidth * s) / 2f
+                val dy = (size.height - baseHeight * s) / 2f
+
+                withTransform({
+                    translate(dx, dy)
+                    scale(s, s, pivot = Offset.Zero)
+                    clipRect(0f, 0f, baseWidth, baseHeight)
+                }) {
+                    drawStrokes(strokes)
+                }
             }
         }
     }
