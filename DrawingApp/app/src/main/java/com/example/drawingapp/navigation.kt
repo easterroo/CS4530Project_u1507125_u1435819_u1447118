@@ -34,9 +34,7 @@ fun AppNavigation() {
                         canvasViewModel.openDrawing(libraryViewModel.getDrawing(drawingId))
                     }
                 } else {
-                    if (canvasViewModel.drawing.value.strokes.isEmpty() && canvasViewModel.drawing.value.id == 0) {
-                        canvasViewModel.openDrawing(null)
-                    }
+                    canvasViewModel.openDrawing(null)
                 }
             }
             CanvasScreen(
