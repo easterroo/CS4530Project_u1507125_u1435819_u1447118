@@ -3,6 +3,7 @@ package com.example.drawingapp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -11,8 +12,9 @@ import androidx.navigation.compose.rememberNavController
  * Defines the app's navigation and routing between pages
  */
 @Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
+fun AppNavigation(
+    navController: NavHostController = rememberNavController()
+) {
     val canvasViewModel : CanvasViewModel = viewModel()
     val libraryViewModel : LibraryViewModel = viewModel()
 
