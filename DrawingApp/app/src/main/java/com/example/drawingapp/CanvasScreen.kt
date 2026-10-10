@@ -387,7 +387,7 @@ fun ColorSelectionButton(color: Color, selectionFunction: (Color) -> Unit) {
 /**
  * Used to create set shapes that can be selected to draw with
  *
- * @param brushShape The selected brushShape
+ * @param brushShape The selected brush shape
  * @param selectionFunction the function used to select a brush shape
  */
 @Composable
