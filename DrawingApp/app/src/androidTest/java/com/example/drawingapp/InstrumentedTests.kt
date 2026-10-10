@@ -1,10 +1,17 @@
 package com.example.drawingapp
 
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.printToLog
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.testing.TestNavHostController
@@ -78,5 +85,20 @@ class NavigationInstrumentedTest {
         val entry = navController.currentBackStackEntry
         assertEquals("draw/{id}", entry?.destination?.route)
         assertEquals("new", entry?.arguments?.getString("id"))
+    }
+
+    @Test
+    fun testEndToEndDrawingCreation() {
+        composeTestRule.onNodeWithText("New Drawing").performClick()
+        composeTestRule.onNodeWithText("Untitled Drawing").performClick()
+        composeTestRule.onNodeWithTag("titleField").performTextReplacement("My Art")
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithContentDescription("Save").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule.onAllNodesWithText("My Drawings").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.waitForIdle()
+        composeTestRule.onRoot().printToLog("TREE")
+        composeTestRule.onAllNodesWithText("My Art").printToLog("MYART")
     }
 }
