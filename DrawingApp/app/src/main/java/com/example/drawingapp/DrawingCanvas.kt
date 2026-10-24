@@ -9,12 +9,12 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 /**
  * Holds the identifying information of the drawing
  */
-data class Drawing (
+data class DrawingCanvas (
     val id: Int = 0,
     val title: String = "Untitled Drawing",
     val strokes: List<Stroke> = listOf(),
-    val canvasWidth: Float = 1f,
-    val canvasHeight: Float = 1f) {
+    val width: Float = 1f,
+    val height: Float = 1f) {
 
 }
 

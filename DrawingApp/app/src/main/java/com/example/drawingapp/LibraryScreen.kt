@@ -33,18 +33,18 @@ import androidx.compose.ui.graphics.drawscope.withTransform
  */
 class LibraryViewModel : ViewModel()
 {
-    private val drawings = MutableStateFlow(listOf<Drawing>())
-    val drawingsSnapshots : StateFlow<List<Drawing>> = drawings.asStateFlow()
+    private val drawings = MutableStateFlow(listOf<DrawingCanvas>())
+    val drawingsSnapshots : StateFlow<List<DrawingCanvas>> = drawings.asStateFlow()
 
     private var nextId = 1 // Using manual ID while we aren't using persistent storage; Change in next phase
 
     /** Returns drawing from selected ID */
-    fun getDrawing(id: Int): Drawing? {
+    fun getDrawing(id: Int): DrawingCanvas? {
         return drawings.value.find {it.id == id}
     }
 
     /** Saves drawing as a new one if ID doesn't exist or updates an existing one */
-    fun saveDrawing(drawing: Drawing): Drawing {
+    fun saveDrawing(drawing: DrawingCanvas): DrawingCanvas {
         val saved = if (drawing.id == 0) drawing.copy(id = nextId++) else drawing
 
         drawings.update { list->
@@ -57,7 +57,7 @@ class LibraryViewModel : ViewModel()
     }
 
     /** Deleted drawing */
-    fun deleteDrawing(drawing: Drawing) {
+    fun deleteDrawing(drawing: DrawingCanvas) {
         drawings.value -= drawing
     }
 }
@@ -86,7 +86,7 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                     Column {
                         Text("My Drawings")
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            TextButton(onClick = onNewDrawing) { Text("New Drawing") }
+                            TextButton(onClick = onNewDrawing) { Text("New DrawingCanvas") }
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Select")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Cloud & Backup")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Sharing")}
@@ -118,13 +118,13 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
  * Helper method that creates a drawing card that is duplicated
  * on the library screen
  *
- * @param drawing Drawing object to display on card
+ * @param drawing DrawingCanvas object to display on card
  * @param onOpen When card is clicked, opens it up on the canvas
  * @param onDelete When "Delete" is selected from the menu, it is deleted
  */
 @Composable
 private fun DrawingCard(
-    drawing: Drawing,
+    drawing: DrawingCanvas,
     onOpen: () -> Unit,
     onDelete: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -178,10 +178,10 @@ private fun DrawingCard(
 /**
  * Helper method to create a thumbnail of the drawing to show in the library screen
  *
- * @param drawing The Drawing object to create a thumbnail from
+ * @param drawing The DrawingCanvas object to create a thumbnail from
  */
 @Composable
-fun DrawingThumbnail(drawing: Drawing) {
+fun DrawingThumbnail(drawing: DrawingCanvas) {
     Canvas(
         modifier = Modifier
             .fillMaxSize()
@@ -189,14 +189,14 @@ fun DrawingThumbnail(drawing: Drawing) {
             .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen) // so the eraser works
     ) {
         // Scale the saved canvas to fit the card, centered
-        val s = minOf(size.width / drawing.canvasWidth, size.height / drawing.canvasHeight)
-        val dx = (size.width - drawing.canvasWidth * s) / 2f
-        val dy = (size.height - drawing.canvasHeight * s) / 2f
+        val s = minOf(size.width / drawing.width, size.height / drawing.height)
+        val dx = (size.width - drawing.width * s) / 2f
+        val dy = (size.height - drawing.height * s) / 2f
 
         withTransform({
             translate(dx, dy)
             scale(s, s, pivot = Offset.Zero)
-            clipRect(0f, 0f, drawing.canvasWidth, drawing.canvasHeight)
+            clipRect(0f, 0f, drawing.width, drawing.height)
         }) {
             drawStrokes(drawing.strokes)
         }

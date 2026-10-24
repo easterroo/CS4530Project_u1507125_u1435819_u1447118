@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.update
  * ViewModel representing the Canvas and the information held in it, including brush size, stroke, and color information
  */
 class CanvasViewModel : ViewModel() {
-    private val _drawing = MutableStateFlow(Drawing())
-    val drawing: StateFlow<Drawing> = _drawing.asStateFlow()
+    private val _drawing = MutableStateFlow(DrawingCanvas())
+    val drawing: StateFlow<DrawingCanvas> = _drawing.asStateFlow()
 
     private val _brushSize = MutableStateFlow(16f)
     private val _brushShape = MutableStateFlow(BrushShape.LINE)
@@ -67,8 +67,8 @@ class CanvasViewModel : ViewModel() {
     /** Sets the canvas size; Used in opening the canvas compared to thumbnail */
     fun setCanvasSize(width: Float, height: Float) {
         _drawing.update { current ->
-            if (current.canvasWidth <= 1f || current.canvasHeight <= 1f) {
-                current.copy(canvasWidth = width, canvasHeight = height)
+            if (current.width <= 1f || current.weight <= 1f) {
+                current.copy(width = width, height = height)
             } else {
                 current
             }
@@ -76,9 +76,9 @@ class CanvasViewModel : ViewModel() {
     }
 
     /** Opens the correct drawing with the saved strokes in the CanvasScreen */
-    fun openDrawing(drawing: Drawing?) {
+    fun openDrawing(drawing: DrawingCanvas?) {
         _drawing.update { current ->
-            drawing ?: Drawing(canvasWidth = current.canvasWidth, canvasHeight = current.canvasHeight)
+            drawing ?: DrawingCanvas(width = current.width, height = current.height)
         }
     }
 

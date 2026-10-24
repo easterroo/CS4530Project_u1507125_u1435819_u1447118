@@ -72,7 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
+fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Unit) {
     val drawing by canvasViewModel.drawing.collectAsStateWithLifecycle()
     val brushShape by canvasViewModel.brushShape.collectAsStateWithLifecycle()
     val brushSize by canvasViewModel.brushSize.collectAsStateWithLifecycle()
@@ -277,8 +277,8 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                     {
                         detectDragGestures(
                             onDragStart = { offset ->
-                                val baseWidth = if (drawing.canvasWidth > 1f) drawing.canvasWidth else size.width.toFloat().coerceAtLeast(1f)
-                                val baseHeight = if (drawing.canvasHeight > 1f) drawing.canvasHeight else size.height.toFloat().coerceAtLeast(1f)
+                                val baseWidth = if (drawing.width > 1f) drawing.width else size.width.toFloat().coerceAtLeast(1f)
+                                val baseHeight = if (drawing.height > 1f) drawing.height else size.height.toFloat().coerceAtLeast(1f)
                                 val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
                                 val dx = (size.width.toFloat() - baseWidth * s) / 2f
                                 val dy = (size.height.toFloat() - baseHeight * s) / 2f
@@ -300,8 +300,8 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                                 canvasViewModel.addStroke(newStroke)
                             },
                             onDrag = { change, _ ->
-                                val baseWidth = if (drawing.canvasWidth > 1f) drawing.canvasWidth else size.width.toFloat().coerceAtLeast(1f)
-                                val baseHeight = if (drawing.canvasHeight > 1f) drawing.canvasHeight else size.height.toFloat().coerceAtLeast(1f)
+                                val baseWidth = if (drawing.width > 1f) drawing.width else size.width.toFloat().coerceAtLeast(1f)
+                                val baseHeight = if (drawing.height > 1f) drawing.height else size.height.toFloat().coerceAtLeast(1f)
                                 val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
                                 val dx = (size.width.toFloat() - baseWidth * s) / 2f
                                 val dy = (size.height.toFloat() - baseHeight * s) / 2f
@@ -334,8 +334,8 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (Drawing) -> Unit) {
                     }
             )
             {
-                val baseWidth = if (drawing.canvasWidth > 1f) drawing.canvasWidth else size.width.coerceAtLeast(1f)
-                val baseHeight = if (drawing.canvasHeight > 1f) drawing.canvasHeight else size.height.coerceAtLeast(1f)
+                val baseWidth = if (drawing.width > 1f) drawing.width else size.width.coerceAtLeast(1f)
+                val baseHeight = if (drawing.height > 1f) drawing.height else size.height.coerceAtLeast(1f)
 
                 val s = minOf(size.width / baseWidth, size.height / baseHeight)
                 val dx = (size.width - baseWidth * s) / 2f
