@@ -13,6 +13,9 @@ interface DrawingDAO {
     @Query("DELETE FROM drawings WHERE id = :id")
     suspend fun removeDrawing(id: Int)
 
+    @Query("SELECT title from drawings WHERE id = :id")
+    suspend fun getTitle(id: Int): String
+
     @Query("UPDATE drawings SET title = :title WHERE id = :id")
     suspend fun updateTitle(title: String, id: Int)
 
