@@ -19,6 +19,18 @@ interface DrawingDAO {
     @Query("UPDATE drawings SET title = :title WHERE id = :id")
     suspend fun updateTitle(title: String, id: Int)
 
+    @Query("SELECT width FROM drawings WHERE id = :id")
+    suspend fun getWidth(id: Int): Float
+
+    @Query("UPDATE drawings SET width = :width WHERE id = :id")
+    suspend fun updateWidth(width: Float, id: Int)
+
+    @Query("SELECT height FROM drawings WHERE id = :id")
+    suspend fun getHeight(id: Int): Float
+
+    @Query("UPDATE drawings SET height = :height WHERE id = :id")
+    suspend fun updateHeight(height: Float, id: Int)
+
     @Query("SELECT * FROM drawings WHERE id = :id")
     suspend fun getDrawing(id: Int): DrawingData?
 
