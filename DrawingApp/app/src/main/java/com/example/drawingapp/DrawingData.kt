@@ -10,6 +10,5 @@ data class DrawingData(
     val title: String = "Unnamed Drawing",
     val width: Float = 1f,
     val height: Float = 1f,
-    //TODO: remove duplicate fields from DrawingCanvas, make TypeConverter to serialize
-    val drawing: DrawingCanvas
+    val filePath: String = ""
 )
