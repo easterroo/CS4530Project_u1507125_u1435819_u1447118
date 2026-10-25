@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 /**
  * ViewModel representing the drawings that are displayed in the library screen
  */
-class LibraryViewModel : ViewModel()
+class LibraryViewModel(private val repository: DrawingRepository) : ViewModel()
 {
     private val drawings = MutableStateFlow(listOf<DrawingCanvas>())
     val drawingsSnapshots : StateFlow<List<DrawingCanvas>> = drawings.asStateFlow()

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.update
 /**
  * ViewModel representing the Canvas and the information held in it, including brush size, stroke, and color information
  */
-class CanvasViewModel : ViewModel() {
+class CanvasViewModel(private val repository: DrawingRepository) : ViewModel() {
     private val _drawing = MutableStateFlow(DrawingCanvas())
     val drawing: StateFlow<DrawingCanvas> = _drawing.asStateFlow()
 

@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.drawingapp.ui.theme.DrawingAppTheme
 
@@ -17,7 +18,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DrawingAppTheme {
-                AppNavigation()
+                val canvasViewModel : CanvasViewModel by viewModels{ DrawingViewModelProvider.Factory }
+                val libraryViewModel : LibraryViewModel by viewModels{ DrawingViewModelProvider.Factory }
+
+                AppNavigation(canvasViewModel = canvasViewModel, libraryViewModel = libraryViewModel)
                 BrushSplashScreen()
             }
         }

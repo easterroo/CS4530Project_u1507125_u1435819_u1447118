@@ -13,11 +13,10 @@ import androidx.navigation.compose.rememberNavController
  */
 @Composable
 fun AppNavigation(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    canvasViewModel : CanvasViewModel,
+    libraryViewModel : LibraryViewModel
 ) {
-    val canvasViewModel : CanvasViewModel = viewModel()
-    val libraryViewModel : LibraryViewModel = viewModel()
-
     NavHost(navController = navController, startDestination = "library") {
         composable("library") {
             LibraryScreen(
