@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DrawingDAO {
@@ -29,5 +30,5 @@ interface DrawingDAO {
     suspend fun getDrawing(id: Int): DrawingData?
 
     @Query("SELECT * FROM drawings ORDER BY id")
-    suspend fun allDrawings()
+    fun allDrawings(): Flow<List<DrawingData>>
 }
