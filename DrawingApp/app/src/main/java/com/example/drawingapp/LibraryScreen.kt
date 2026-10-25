@@ -44,6 +44,8 @@ class LibraryViewModel : ViewModel()
     }
 
     /** Saves drawing as a new one if ID doesn't exist or updates an existing one */
+    //TODO: modify saveDrawing and deleteDrawing to convert DrawingCanvas to ImageBitmap and save to
+    // phone storage via MediaStore
     fun saveDrawing(drawing: DrawingCanvas): DrawingCanvas {
         val saved = if (drawing.id == 0) drawing.copy(id = nextId++) else drawing
 
