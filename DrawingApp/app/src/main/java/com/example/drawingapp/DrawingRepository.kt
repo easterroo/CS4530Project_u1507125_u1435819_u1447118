@@ -4,7 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class DrawingRepository(val scope: CoroutineScope, private val dao: DrawingDAO) {
-    val allDrawings = scope.launch{ dao.allDrawings() }
+    val allDrawings = dao.allDrawings()
 
     fun saveDrawing(title: String, width: Float, height: Float, filePath: String) {
         scope.launch {
