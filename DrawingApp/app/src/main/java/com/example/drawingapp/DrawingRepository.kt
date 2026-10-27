@@ -6,11 +6,8 @@ import kotlinx.coroutines.launch
 class DrawingRepository(val scope: CoroutineScope, private val dao: DrawingDAO) {
     val allDrawings = dao.allDrawings()
 
-    fun saveDrawing(title: String, width: Float, height: Float, filePath: String) {
-        scope.launch {
-            val fetchedDrawing = DrawingData(title = title, width = width, height = height, filePath = filePath)
-            dao.saveDrawing(fetchedDrawing)
-        }
+    suspend fun saveDrawing(drawing: DrawingData): Long {
+        return dao.saveDrawing(drawing)
     }
 
     fun removeDrawing(id: Int) {

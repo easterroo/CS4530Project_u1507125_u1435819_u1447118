@@ -1,5 +1,10 @@
 package com.example.drawingapp
 
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Bitmap
+import android.os.Build
+import android.provider.MediaStore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -26,7 +31,16 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 /**
  * ViewModel representing the drawings that are displayed in the library screen
@@ -36,7 +50,21 @@ class LibraryViewModel(private val repository: DrawingRepository) : ViewModel()
     private val drawings = MutableStateFlow(listOf<DrawingCanvas>())
     val drawingsSnapshots : StateFlow<List<DrawingCanvas>> = drawings.asStateFlow()
 
-    private var nextId = 1 // Using manual ID while we aren't using persistent storage; Change in next phase
+    init {
+        viewModelScope.launch {
+            repository.allDrawings.collect { dataList ->
+                drawings.value = dataList.map { data ->
+                    DrawingCanvas(
+                        id = data.id,
+                        title = data.title,
+                        width = data.width,
+                        height = data.height,
+                        filePath = data.filePath
+                    )
+                }
+            }
+        }
+    }
 
     /** Returns drawing from selected ID */
     fun getDrawing(id: Int): DrawingCanvas? {
@@ -44,23 +72,76 @@ class LibraryViewModel(private val repository: DrawingRepository) : ViewModel()
     }
 
     /** Saves drawing as a new one if ID doesn't exist or updates an existing one */
-    //TODO: modify saveDrawing and deleteDrawing to convert DrawingCanvas to ImageBitmap and save to
-    // phone storage via MediaStore
-    fun saveDrawing(drawing: DrawingCanvas): DrawingCanvas {
-        val saved = if (drawing.id == 0) drawing.copy(id = nextId++) else drawing
+    fun saveDrawing(drawing: DrawingCanvas, context: Context?): DrawingCanvas {
+        var finalUriString = drawing.filePath
+        var saved = drawing
 
-        drawings.update { list->
-            if (list.any {it.id == saved.id }) list.map {
-                if (it.id == saved.id) saved else it
+        if (context != null) {
+            val width = if (drawing.width > 0) drawing.width.toInt() else 1000
+            val height = if (drawing.height > 0) drawing.height.toInt() else 1000
+
+            val imageBitmap = ImageBitmap(width, height)
+            val canvas = androidx.compose.ui.graphics.Canvas(imageBitmap)
+            val drawScope = CanvasDrawScope()
+            drawScope.draw(
+                density = Density(1f),
+                layoutDirection = LayoutDirection.Ltr,
+                canvas = canvas,
+                size = androidx.compose.ui.geometry.Size(width.toFloat(), height.toFloat())
+            ) {
+                drawRect(color = Color.White)
+                drawStrokes(drawing.strokes)
             }
-            else list + saved
+
+            val bitmap = imageBitmap.asAndroidBitmap()
+
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME,
+                    "${drawing.title}_${System.currentTimeMillis()}.png")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            }
+
+            val resolver = context.contentResolver
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            uri?.let {
+                resolver.openOutputStream(it)?.use { outputStream ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                }
+
+                finalUriString = it.toString()
+            }
         }
+
+        viewModelScope.launch {
+            val dataToSave = DrawingData(
+                id = drawing.id,
+                title = drawing.title,
+                width = drawing.width,
+                height = drawing.height,
+                filePath = finalUriString
+            )
+
+            val generatedId = repository.saveDrawing(dataToSave)
+            saved = drawing.copy(id = generatedId.toInt(), filePath = finalUriString)
+        }
+
         return saved
     }
 
     /** Deleted drawing */
-    fun deleteDrawing(drawing: DrawingCanvas) {
-        drawings.value -= drawing
+    fun deleteDrawing(drawing: DrawingCanvas, context: Context?) {
+        if (context != null && drawing.filePath.isNotEmpty()) {
+            val resolver = context.contentResolver
+            try {
+                val uri = drawing.filePath.toUri()
+                resolver.delete(uri, null, null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        viewModelScope.launch {
+            repository.removeDrawing(drawing.id)
+        }
     }
 }
 
@@ -77,6 +158,7 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                   onOpenDrawing: (Int) -> Unit = {},
                   onNewDrawing: () -> Unit = {}) {
     val drawings by myVM.drawingsSnapshots.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -109,7 +191,7 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                 DrawingCard(
                     drawing = drawing,
                     onOpen = { onOpenDrawing(drawing.id) },
-                    onDelete = { myVM.deleteDrawing(drawing) }
+                    onDelete = { myVM.deleteDrawing(drawing, context) }
                 )
             }
         }

@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DrawingDAO {
-    @Insert
-    suspend fun saveDrawing(drawing: DrawingData)
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+    suspend fun saveDrawing(drawing: DrawingData): Long
 
     @Query("DELETE FROM drawings WHERE id = :id")
     suspend fun removeDrawing(id: Int)

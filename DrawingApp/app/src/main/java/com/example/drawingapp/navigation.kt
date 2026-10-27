@@ -2,6 +2,7 @@ package com.example.drawingapp
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -27,6 +28,7 @@ fun AppNavigation(
         }
         composable("draw/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id")
+            val context = LocalContext.current
 
             LaunchedEffect(id) {
                 val drawingId = id?.toIntOrNull()
@@ -41,7 +43,7 @@ fun AppNavigation(
             CanvasScreen(
                 canvasViewModel = canvasViewModel,
                 onSave = {drawing ->
-                    val saved = libraryViewModel.saveDrawing(drawing)
+                    val saved = libraryViewModel.saveDrawing(drawing, context)
                     canvasViewModel.setId(saved.id)
                     navController.popBackStack() // Returns from Canvas back to Library
                 }

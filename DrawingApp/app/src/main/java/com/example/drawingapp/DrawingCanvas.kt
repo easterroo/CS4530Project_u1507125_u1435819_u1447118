@@ -14,7 +14,8 @@ data class DrawingCanvas (
     val title: String = "Untitled Drawing",
     val strokes: List<Stroke> = listOf(),
     val width: Float = 1f,
-    val height: Float = 1f) {
+    val height: Float = 1f,
+    val filePath: String = "") {
 
 }
 
