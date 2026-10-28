@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.printToLog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.testing.TestNavHostController
@@ -68,7 +69,13 @@ class NavigationInstrumentedTest {
             navController = TestNavHostController(LocalContext.current).apply {
                 navigatorProvider.addNavigator(ComposeNavigator())
             }
-            AppNavigation(navController = navController)
+            val canvasViewModel: CanvasViewModel = viewModel(factory = DrawingViewModelProvider.Factory)
+            val libraryViewModel: LibraryViewModel = viewModel(factory = DrawingViewModelProvider.Factory)
+            AppNavigation(
+                navController = navController,
+                canvasViewModel = canvasViewModel,
+                libraryViewModel = libraryViewModel
+            )
         }
     }
 

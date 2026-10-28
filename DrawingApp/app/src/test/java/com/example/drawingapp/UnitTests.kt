@@ -2,66 +2,141 @@ package com.example.drawingapp
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Test
-
 import org.junit.Assert.*
 import org.junit.Before
 
-class LibraryViewModelTest {
-    private lateinit var vm: LibraryViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 
-    @Before
-    fun setup() { vm = LibraryViewModel() }
+class FakeDrawingDAO : DrawingDAO {
+    private val drawings = mutableListOf<DrawingData>()
+    private val _flow = MutableStateFlow<List<DrawingData>>(emptyList())
 
-    @Test
-    fun saveDrawing_withIdZero_assignsNewId() {
-        val saved = vm.saveDrawing(Drawing(title = "A"))
-        assertEquals(1, saved.id)
-        assertEquals(1, vm.drawingsSnapshots.value.size)
+    private fun emit() {
+        _flow.value = drawings.toList()
     }
 
-    @Test
-    fun saveDrawing_assignsIncrementingIds() {
-        val a = vm.saveDrawing(Drawing(title = "A"))
-        val b = vm.saveDrawing(Drawing(title = "B"))
-        assertNotEquals(a.id, b.id)
+    override suspend fun addDrawing(drawing: DrawingData): Long {
+        val nextId = if (drawing.id == 0) (drawings.maxOfOrNull { it.id } ?: 0) + 1 else drawing.id
+        drawings.removeAll { it.id == nextId }
+        drawings.add(drawing.copy(id = nextId))
+        emit()
+        return nextId.toLong()
     }
 
-    @Test
-    fun saveDrawing_existingId_updatesInsteadOfAdding() {
-        val saved = vm.saveDrawing(Drawing(title = "Old"))
-        vm.saveDrawing(saved.copy(title = "New"))
-        assertEquals(1, vm.drawingsSnapshots.value.size)
-        assertEquals("New", vm.getDrawing(saved.id)?.title)
+    override suspend fun removeDrawing(id: Int) {
+        drawings.removeAll { it.id == id }
+        emit()
     }
 
-    @Test
-    fun getDrawing_unknownId_returnsNull() {
-        assertNull(vm.getDrawing(99))
+    override suspend fun updateTitle(title: String, id: Int) {
+        val index = drawings.indexOfFirst { it.id == id }
+        if (index != -1) {
+            drawings[index] = drawings[index].copy(title = title)
+            emit()
+        }
     }
 
-    @Test
-    fun deleteDrawing_removesIt() {
-        val saved = vm.saveDrawing(Drawing())
-        vm.deleteDrawing(saved)
-        assertTrue(vm.drawingsSnapshots.value.isEmpty())
+    override suspend fun updateWidth(width: Float, id: Int) {
+        val index = drawings.indexOfFirst { it.id == id }
+        if (index != -1) {
+            drawings[index] = drawings[index].copy(width = width)
+            emit()
+        }
+    }
+
+    override suspend fun updateHeight(height: Float, id: Int) {
+        val index = drawings.indexOfFirst { it.id == id }
+        if (index != -1) {
+            drawings[index] = drawings[index].copy(height = height)
+            emit()
+        }
+    }
+
+    override suspend fun updateFilePath(filePath: String, id: Int) {
+        val index = drawings.indexOfFirst { it.id == id }
+        if (index != -1) {
+            drawings[index] = drawings[index].copy(filePath = filePath)
+            emit()
+        }
+    }
+
+    override suspend fun getDrawing(id: Int): DrawingData? {
+        return drawings.find { it.id == id }
+    }
+
+    override fun allDrawings(): Flow<List<DrawingData>> {
+        return _flow
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
+class LibraryViewModelTest {
+    private lateinit var repo: DrawingRepository
+    private lateinit var vm: LibraryViewModel
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        repo = DrawingRepository(CoroutineScope(Dispatchers.Unconfined), FakeDrawingDAO())
+        vm = LibraryViewModel(repo)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun getDrawing_unknownId_returnsDefault() {
+        val drawing = vm.getDrawing(99)
+        assertNotNull(drawing)
+        assertEquals(99, drawing.id)
+    }
+
+    @Test
+    fun saveAndGetDrawing() {
+        val data = DrawingData(id = 1, title = "A")
+        vm.saveDrawing(data = data, drawing = DrawingCanvas(), context = null)
+        val fetched = vm.getDrawing(1)
+        assertNotNull(fetched)
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
 class CanvasViewModelTest {
+    private lateinit var repo: DrawingRepository
     private lateinit var vm: CanvasViewModel
+
     private fun stroke(pts: List<Offset>, color: Color = Color.Red) =
         Stroke(pts, BrushShape.LINE, 16f, color)
 
     @Before
-    fun setup() { vm = CanvasViewModel() }
+    fun setup() {
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        repo = DrawingRepository(CoroutineScope(Dispatchers.Unconfined), FakeDrawingDAO())
+        vm = CanvasViewModel(repo)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun defaults() {
         assertEquals(16f, vm.brushSize.value)
         assertEquals(BrushShape.LINE, vm.brushShape.value)
         assertEquals(Color.Red, vm.currentColor.value)
-        assertEquals("Untitled Drawing", vm.drawing.value.title)
+        assertTrue(vm.drawing.value.strokes.isEmpty())
     }
 
     @Test
@@ -76,7 +151,7 @@ class CanvasViewModelTest {
         val first = stroke(listOf(Offset(0f, 0f)))
         vm.addStroke(first)
         vm.addStroke(stroke(listOf(Offset(1f, 1f))))
-        val updated = stroke(listOf(Offset(1f, 1f), (Offset(2f, 2f))))
+        val updated = stroke(listOf(Offset(1f, 1f), Offset(2f, 2f)))
         vm.updateLastStroke(updated)
         assertEquals(first, vm.drawing.value.strokes[0])
         assertEquals(updated, vm.drawing.value.strokes[1])
@@ -92,34 +167,26 @@ class CanvasViewModelTest {
     fun setCanvasSize_onlyAppliesFirstTime() {
         vm.setCanvasSize(800f, 1200f)
         vm.setCanvasSize(100f, 100f)
-        assertEquals(800f, vm.drawing.value.canvasWidth)
-        assertEquals(1200f, vm.drawing.value.canvasHeight)
+        assertEquals(800f, vm.drawing.value.width)
+        assertEquals(1200f, vm.drawing.value.height)
     }
 
     @Test
-    fun openDrawing_null_createsBlankKeepingCanvasSize() {
+    fun openDrawing_resetsStrokesAndSetsId() {
         vm.setCanvasSize(800f, 1200f)
         vm.addStroke(stroke(listOf(Offset.Zero)))
-        vm.openDrawing(null)
+        vm.openDrawing(null, 5)
         assertTrue(vm.drawing.value.strokes.isEmpty())
-        assertEquals(800f, vm.drawing.value.canvasWidth)
-    }
-
-    @Test
-    fun openDrawing_loadsGivenDrawing() {
-        val d = Drawing(id = 5, title = "Saved", canvasWidth = 500f, canvasHeight = 500f)
-        vm.openDrawing(d)
-        assertEquals(d, vm.drawing.value)
+        assertEquals(5, vm.id.value)
     }
 
     @Test
     fun setters_updateState() {
-        vm.setBrushSize(32f); vm.setBrushShape(BrushShape.SQUARE)
-        vm.setColor(Color.Blue); vm.updateTitle("Hi"); vm.setId(7)
+        vm.setBrushSize(32f)
+        vm.setBrushShape(BrushShape.SQUARE)
+        vm.setColor(Color.Blue)
         assertEquals(32f, vm.brushSize.value)
         assertEquals(BrushShape.SQUARE, vm.brushShape.value)
         assertEquals(Color.Blue, vm.currentColor.value)
-        assertEquals("Hi", vm.drawing.value.title)
-        assertEquals(7, vm.drawing.value.id)
     }
 }

@@ -10,12 +10,10 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
  * Holds the identifying information of the drawing
  */
 data class DrawingCanvas (
-    val id: Int = 0,
-    val title: String = "Untitled Drawing",
     val strokes: List<Stroke> = listOf(),
     val width: Float = 1f,
     val height: Float = 1f,
-    val filePath: String = "") {
+) {
 
 }
 
@@ -47,13 +45,24 @@ fun DrawScope.drawStrokes(strokes: List<Stroke>) {
 
         when (it.shape) {
             BrushShape.LINE -> {
-                for (i in 0 until strokeList.size - 1) {
-                    drawLine(
+                if (strokeList.size == 1) {
+                    drawCircle(
                         color = color,
-                        strokeList[i], strokeList[i + 1], size,
-                        blendMode = if (color == Color.Transparent) BlendMode.Clear
-                        else BlendMode.SrcOver
+                        radius = size / 2,
+                        center = strokeList[0],
+                        blendMode = if (color == Color.Transparent) BlendMode.Clear else BlendMode.SrcOver
                     )
+                } else {
+                    for (i in 0 until strokeList.size - 1) {
+                        drawLine(
+                            color = color,
+                            start = strokeList[i],
+                            end = strokeList[i + 1],
+                            strokeWidth = size,
+                            cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                            blendMode = if (color == Color.Transparent) BlendMode.Clear else BlendMode.SrcOver
+                        )
+                    }
                 }
             }
 
@@ -61,9 +70,9 @@ fun DrawScope.drawStrokes(strokes: List<Stroke>) {
                 strokeList.forEach { point ->
                     drawCircle(
                         color = color,
-                        size / 2, point,
-                        blendMode = if (color == Color.Transparent) BlendMode.Clear
-                        else BlendMode.SrcOver
+                        radius = size / 2,
+                        center = point,
+                        blendMode = if (color == Color.Transparent) BlendMode.Clear else BlendMode.SrcOver
                     )
                 }
             }
@@ -72,10 +81,9 @@ fun DrawScope.drawStrokes(strokes: List<Stroke>) {
                 strokeList.forEach { point ->
                     drawRect(
                         color = color,
-                        Offset(point.x - size / 2, point.y - size / 2),
-                        Size(size, size),
-                        blendMode = if (color == Color.Transparent) BlendMode.Clear
-                        else BlendMode.SrcOver
+                        topLeft = Offset(point.x - size / 2, point.y - size / 2),
+                        size = Size(size, size),
+                        blendMode = if (color == Color.Transparent) BlendMode.Clear else BlendMode.SrcOver
                     )
                 }
             }

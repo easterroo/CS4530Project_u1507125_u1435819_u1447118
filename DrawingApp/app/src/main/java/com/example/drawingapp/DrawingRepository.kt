@@ -6,8 +6,8 @@ import kotlinx.coroutines.launch
 class DrawingRepository(val scope: CoroutineScope, private val dao: DrawingDAO) {
     val allDrawings = dao.allDrawings()
 
-    suspend fun saveDrawing(drawing: DrawingData): Long {
-        return dao.saveDrawing(drawing)
+    suspend fun addDrawing(drawing: DrawingData): Long {
+        return dao.addDrawing(drawing)
     }
 
     fun removeDrawing(id: Int) {
@@ -30,7 +30,7 @@ class DrawingRepository(val scope: CoroutineScope, private val dao: DrawingDAO) 
         scope.launch { dao.updateFilePath(filePath, id) }
     }
 
-    fun getDrawing(id: Int) {
-        scope.launch { dao.getDrawing(id) }
+    suspend fun getDrawing(id: Int): DrawingData? {
+        return dao.getDrawing(id)
     }
 }

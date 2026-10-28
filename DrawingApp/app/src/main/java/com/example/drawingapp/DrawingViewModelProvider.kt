@@ -13,9 +13,10 @@ object DrawingViewModelProvider {
             )
         }
         initializer {
+            val app = (this[AndroidViewModelFactory.APPLICATION_KEY] as DrawingApplication)
             LibraryViewModel(
-                (this[AndroidViewModelFactory.APPLICATION_KEY]
-                        as DrawingApplication).drawingRepository
+                app.drawingRepository,
+                app
             )
         }
     }

@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class DrawingData(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val title: String = "Unnamed Drawing",
+    val title: String = "Untitled Drawing",
     val width: Float = 1f,
     val height: Float = 1f,
     val filePath: String = ""

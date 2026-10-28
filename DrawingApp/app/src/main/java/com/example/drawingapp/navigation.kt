@@ -3,7 +3,6 @@ package com.example.drawingapp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,24 +26,52 @@ fun AppNavigation(
             )
         }
         composable("draw/{id}") { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id")
+            val id = backStackEntry.arguments?.getString("id")?.toIntOrNull()
             val context = LocalContext.current
-
             LaunchedEffect(id) {
-                val drawingId = id?.toIntOrNull()
-                if (drawingId != null) {
-                    if (canvasViewModel.drawing.value.id != drawingId) {
-                        canvasViewModel.openDrawing(libraryViewModel.getDrawing(drawingId))
-                    }
+                if (id != null) {
+                    val data = libraryViewModel.getDrawing(id)
+                    val bitmap = libraryViewModel.drawingsSnapshots.value[id]
+                    canvasViewModel.openDrawing(bitmap, id, data.title, data.width, data.height)
                 } else {
-                    canvasViewModel.openDrawing(null)
+                    navController.navigate("draw/new")
                 }
             }
             CanvasScreen(
                 canvasViewModel = canvasViewModel,
-                onSave = {drawing ->
-                    val saved = libraryViewModel.saveDrawing(drawing, context)
-                    canvasViewModel.setId(saved.id)
+                onSave = { drawing ->
+                    val data = DrawingData(
+                        id = canvasViewModel.id.value,
+                        title = canvasViewModel.title.value
+                    )
+                    libraryViewModel.saveDrawing(
+                        data = data,
+                        drawing = drawing,
+                        backgroundImage = canvasViewModel.image.value,
+                        context = context
+                    )
+                    navController.popBackStack() // Returns from Canvas back to Library
+                }
+            )
+        }
+        composable("draw/new") {
+            val context = LocalContext.current
+            LaunchedEffect(Unit) {
+                canvasViewModel.newDrawing()
+            }
+            CanvasScreen(
+                canvasViewModel = canvasViewModel,
+                onSave = { drawing ->
+                    val data = DrawingData(
+                        id = canvasViewModel.id.value,
+                        title = canvasViewModel.title.value
+                    )
+                    libraryViewModel.saveDrawing(
+                        data = data,
+                        drawing = drawing,
+                        backgroundImage = null,
+                        context = context
+                    )
                     navController.popBackStack() // Returns from Canvas back to Library
                 }
             )
