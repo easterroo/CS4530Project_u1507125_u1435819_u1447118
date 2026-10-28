@@ -46,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,11 +55,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,6 +75,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Unit) {
     val drawing by canvasViewModel.drawing.collectAsStateWithLifecycle()
+    val image by canvasViewModel.image.collectAsStateWithLifecycle()
+    val id by canvasViewModel.id.collectAsStateWithLifecycle()
+    val titleState by canvasViewModel.title.collectAsStateWithLifecycle()
     val brushShape by canvasViewModel.brushShape.collectAsStateWithLifecycle()
     val brushSize by canvasViewModel.brushSize.collectAsStateWithLifecycle()
     val currentColor by canvasViewModel.currentColor.collectAsStateWithLifecycle()
@@ -83,6 +87,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
     var currentStrokeList by remember { mutableStateOf<List<Offset>>(emptyList()) }
 
     var isEditingTitle by remember { mutableStateOf(false) }
+    var title by rememberSaveable(id, titleState) { mutableStateOf(titleState) }
     var colorSelectionMenu by remember { mutableStateOf(true) }
 
     Scaffold(
@@ -94,15 +99,16 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                 title = { 
                     if (isEditingTitle) {
                         TextField(
-                            value = drawing.title,
-                            onValueChange = { canvasViewModel.updateTitle(it) },
+                            value = title,
+                            onValueChange = { title = it },
+
                             textStyle = TextStyle(fontSize = 22.sp),
                             singleLine = true
                         )
 
                     } else {
                         Text(
-                            text = drawing.title,
+                            text = title,
                             modifier = Modifier.clickable { isEditingTitle = true }
                         )
                     }
@@ -112,6 +118,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                         TextButton(
                             onClick = { 
                                 isEditingTitle = false
+                                canvasViewModel.updateTitle(title, id)
                             }
                         ) {
                             Text("Done")
@@ -126,6 +133,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                                 )
                                       },
                             onClick = {
+                                canvasViewModel.updateTitle(title, id)
                                 onSave(drawing)
                             }
                         )
@@ -266,10 +274,10 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .onSizeChanged {
+                    .onGloballyPositioned { coordinates ->
                         canvasViewModel.setCanvasSize(
-                            it.width.toFloat(),
-                            it.height.toFloat()
+                            coordinates.size.width.toFloat(),
+                            coordinates.size.height.toFloat()
                         )
                     }
                     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
@@ -277,8 +285,8 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                     {
                         detectDragGestures(
                             onDragStart = { offset ->
-                                val baseWidth = if (drawing.width > 1f) drawing.width else size.width.toFloat().coerceAtLeast(1f)
-                                val baseHeight = if (drawing.height > 1f) drawing.height else size.height.toFloat().coerceAtLeast(1f)
+                                val baseWidth = size.width.toFloat().coerceAtLeast(1f)
+                                val baseHeight = size.height.toFloat().coerceAtLeast(1f)
                                 val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
                                 val dx = (size.width.toFloat() - baseWidth * s) / 2f
                                 val dy = (size.height.toFloat() - baseHeight * s) / 2f
@@ -300,8 +308,8 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                                 canvasViewModel.addStroke(newStroke)
                             },
                             onDrag = { change, _ ->
-                                val baseWidth = if (drawing.width > 1f) drawing.width else size.width.toFloat().coerceAtLeast(1f)
-                                val baseHeight = if (drawing.height > 1f) drawing.height else size.height.toFloat().coerceAtLeast(1f)
+                                val baseWidth = size.width.toFloat().coerceAtLeast(1f)
+                                val baseHeight = size.height.toFloat().coerceAtLeast(1f)
                                 val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
                                 val dx = (size.width.toFloat() - baseWidth * s) / 2f
                                 val dy = (size.height.toFloat() - baseHeight * s) / 2f
@@ -334,12 +342,25 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                     }
             )
             {
-                val baseWidth = if (drawing.width > 1f) drawing.width else size.width.coerceAtLeast(1f)
-                val baseHeight = if (drawing.height > 1f) drawing.height else size.height.coerceAtLeast(1f)
+                val baseWidth = size.width.coerceAtLeast(1f)
+                val baseHeight = size.height.coerceAtLeast(1f)
 
                 val s = minOf(size.width / baseWidth, size.height / baseHeight)
                 val dx = (size.width - baseWidth * s) / 2f
                 val dy = (size.height - baseHeight * s) / 2f
+
+                image?.let { img ->
+                    withTransform({
+                        translate(dx, dy)
+                        scale(s, s, pivot = Offset.Zero)
+                        clipRect(0f, 0f, baseWidth, baseHeight)
+                    }) {
+                        drawImage(
+                            image = img,
+                            dstSize = androidx.compose.ui.unit.IntSize(baseWidth.toInt(), baseHeight.toInt())
+                        )
+                    }
+                }
 
                 withTransform({
                     translate(dx, dy)
