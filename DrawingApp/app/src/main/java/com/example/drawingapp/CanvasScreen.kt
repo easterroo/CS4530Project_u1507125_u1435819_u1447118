@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -59,8 +60,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -268,105 +269,47 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color.White)
+                .background(Color.LightGray),
+            contentAlignment = Alignment.Center
         )
         {
             Canvas(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .onGloballyPositioned { coordinates ->
-                        canvasViewModel.setCanvasSize(
-                            coordinates.size.width.toFloat(),
-                            coordinates.size.height.toFloat()
-                        )
-                    }
+                    .aspectRatio(drawing.width / drawing.height)
+                    .background(Color.White)
                     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                     .pointerInput(Unit)
                     {
                         detectDragGestures(
                             onDragStart = { offset ->
-                                val baseWidth = size.width.toFloat().coerceAtLeast(1f)
-                                val baseHeight = size.height.toFloat().coerceAtLeast(1f)
-                                val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
-                                val dx = (size.width.toFloat() - baseWidth * s) / 2f
-                                val dy = (size.height.toFloat() - baseHeight * s) / 2f
-
-                                val logicalOffset = Offset(
-                                    x = (offset.x - dx) / s,
-                                    y = (offset.y - dy) / s
+                                val s = size.width / drawing.width
+                                currentStrokeList = listOf(offset / s)
+                                canvasViewModel.addStroke(
+                                    Stroke(
+                                        currentStrokeList, brushShape, brushSize,
+                                        if (eraseMode) Color.Transparent else currentColor
+                                    )
                                 )
-
-                                currentStrokeList = listOf(logicalOffset)
-
-                                val newStroke = Stroke(
-                                    stroke = currentStrokeList,
-                                    shape = brushShape,
-                                    size = brushSize,
-                                    color = if (eraseMode) Color.Transparent else currentColor
-                                )
-
-                                canvasViewModel.addStroke(newStroke)
                             },
                             onDrag = { change, _ ->
-                                val baseWidth = size.width.toFloat().coerceAtLeast(1f)
-                                val baseHeight = size.height.toFloat().coerceAtLeast(1f)
-                                val s = minOf(size.width.toFloat() / baseWidth, size.height.toFloat() / baseHeight)
-                                val dx = (size.width.toFloat() - baseWidth * s) / 2f
-                                val dy = (size.height.toFloat() - baseHeight * s) / 2f
-
-                                val historicalPoints = change.historical.map { 
-                                    Offset(
-                                        x = (it.position.x - dx) / s,
-                                        y = (it.position.y - dy) / s
-                                    )
-                                }
-                                val currentLogical = Offset(
-                                    x = (change.position.x - dx) / s,
-                                    y = (change.position.y - dy) / s
+                                val s = size.width / drawing.width
+                                currentStrokeList = currentStrokeList +
+                                        change.historical.map { it.position / s } + (change.position / s)
+                                canvasViewModel.updateLastStroke(
+                                    Stroke(currentStrokeList, brushShape, brushSize,
+                                        if (eraseMode) Color.Transparent else currentColor)
                                 )
-
-                                currentStrokeList =
-                                    currentStrokeList + historicalPoints + currentLogical
-
-                                val updatedStroke = Stroke(
-                                    stroke = currentStrokeList,
-                                    shape = brushShape,
-                                    size = brushSize,
-                                    color = if (eraseMode) Color.Transparent else currentColor
-                                )
-
-                                canvasViewModel.updateLastStroke(updatedStroke)
                             },
                             onDragEnd = { currentStrokeList = emptyList() }
                         )
                     }
             )
             {
-                val baseWidth = size.width.coerceAtLeast(1f)
-                val baseHeight = size.height.coerceAtLeast(1f)
-
-                val s = minOf(size.width / baseWidth, size.height / baseHeight)
-                val dx = (size.width - baseWidth * s) / 2f
-                val dy = (size.height - baseHeight * s) / 2f
-
-                image?.let { img ->
-                    withTransform({
-                        translate(dx, dy)
-                        scale(s, s, pivot = Offset.Zero)
-                        clipRect(0f, 0f, baseWidth, baseHeight)
-                    }) {
-                        drawImage(
-                            image = img,
-                            dstSize = androidx.compose.ui.unit.IntSize(baseWidth.toInt(), baseHeight.toInt())
-                        )
+                val s = size.width / drawing.width
+                withTransform({ scale(s, s, pivot = Offset.Zero) }) {
+                    image?.let {
+                        drawImage(it, dstSize = IntSize(drawing.width.toInt(), drawing.height.toInt()))
                     }
-                }
-
-                withTransform({
-                    translate(dx, dy)
-                    scale(s, s, pivot = Offset.Zero)
-                    clipRect(0f, 0f, baseWidth, baseHeight)
-                }) {
                     drawStrokes(strokes)
                 }
             }

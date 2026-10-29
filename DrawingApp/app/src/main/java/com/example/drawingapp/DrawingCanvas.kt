@@ -11,8 +11,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
  */
 data class DrawingCanvas (
     val strokes: List<Stroke> = listOf(),
-    val width: Float = 1f,
-    val height: Float = 1f,
+    val width: Float = 1000f,
+    val height: Float = 1000f,
 ) {
 
 }

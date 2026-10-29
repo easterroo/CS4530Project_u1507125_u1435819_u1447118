@@ -16,13 +16,14 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val showSplash = savedInstanceState == null
         setContent {
             DrawingAppTheme {
                 val canvasViewModel : CanvasViewModel by viewModels{ DrawingViewModelProvider.Factory }
                 val libraryViewModel : LibraryViewModel by viewModels{ DrawingViewModelProvider.Factory }
 
                 AppNavigation(canvasViewModel = canvasViewModel, libraryViewModel = libraryViewModel)
-                BrushSplashScreen()
+                if (showSplash) BrushSplashScreen()
             }
         }
     }

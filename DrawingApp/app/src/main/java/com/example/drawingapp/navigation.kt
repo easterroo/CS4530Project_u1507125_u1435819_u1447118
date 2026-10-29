@@ -2,6 +2,10 @@ package com.example.drawingapp
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -28,13 +32,17 @@ fun AppNavigation(
         composable("draw/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id")?.toIntOrNull()
             val context = LocalContext.current
+            var initialized by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(id) {
-                if (id != null) {
-                    val data = libraryViewModel.getDrawing(id)
-                    val bitmap = libraryViewModel.drawingsSnapshots.value[id]
-                    canvasViewModel.openDrawing(bitmap, id, data.title, data.width, data.height)
-                } else {
-                    navController.navigate("draw/new")
+                if (!initialized) {
+                    initialized = true
+                    if (id != null) {
+                        val data = libraryViewModel.getDrawing(id)
+                        val bitmap = libraryViewModel.drawingsSnapshots.value[id]
+                        canvasViewModel.openDrawing(bitmap, id, data.title, data.width, data.height)
+                    } else {
+                        navController.navigate("draw/new")
+                    }
                 }
             }
             CanvasScreen(
@@ -56,8 +64,12 @@ fun AppNavigation(
         }
         composable("draw/new") {
             val context = LocalContext.current
+            var initialized by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(Unit) {
-                canvasViewModel.newDrawing()
+                if (!initialized) {
+                    initialized = true
+                    canvasViewModel.newDrawing()
+                }
             }
             CanvasScreen(
                 canvasViewModel = canvasViewModel,

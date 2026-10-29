@@ -96,12 +96,12 @@ class CanvasViewModel(private val repository: DrawingRepository) : ViewModel() {
         val initialWidth = when {
             width > 1f -> width
             image != null -> image.width.toFloat()
-            else -> 1f
+            else -> 1000f
         }
         val initialHeight = when {
             height > 1f -> height
             image != null -> image.height.toFloat()
-            else -> 1f
+            else -> 1000f
         }
         _drawing.value = DrawingCanvas(width = initialWidth, height = initialHeight)
     }
