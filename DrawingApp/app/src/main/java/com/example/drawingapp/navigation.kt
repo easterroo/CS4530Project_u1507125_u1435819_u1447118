@@ -8,9 +8,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 
 /**
  * Defines the app's navigation and routing between pages
@@ -26,23 +28,21 @@ fun AppNavigation(
             LibraryScreen(
                 myVM = libraryViewModel,
                 onOpenDrawing = { id -> navController.navigate("draw/$id") },
-                onNewDrawing = { navController.navigate("draw/new") }
+                onNewDrawing = { navController.navigate("draw") }
             )
         }
-        composable("draw/{id}") { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id")?.toIntOrNull()
+        composable("draw/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("id") ?: 0
             val context = LocalContext.current
             var initialized by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(id) {
                 if (!initialized) {
                     initialized = true
-                    if (id != null) {
-                        val data = libraryViewModel.getDrawing(id)
-                        val bitmap = libraryViewModel.drawingsSnapshots.value[id]
-                        canvasViewModel.openDrawing(bitmap, id, data.title, data.width, data.height)
-                    } else {
-                        navController.navigate("draw/new")
-                    }
+                    val data = libraryViewModel.getDrawing(id)
+                    val bitmap = libraryViewModel.drawingsSnapshots.value[id]
+                    canvasViewModel.openDrawing(bitmap, id, data.title, data.width, data.height)
                 }
             }
             CanvasScreen(
@@ -62,7 +62,7 @@ fun AppNavigation(
                 }
             )
         }
-        composable("draw/new") {
+        composable("draw") {
             val context = LocalContext.current
             var initialized by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(Unit) {

@@ -1,5 +1,6 @@
 package com.example.drawingapp
 
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
@@ -32,31 +33,6 @@ import org.junit.Rule
  * See [testing documentation](http://d.android.com/tools/testing).
  */
 @RunWith(AndroidJUnit4::class)
-class InstrumentedTests {
-    @Test
-    fun useAppContext() {
-        // Context of the app under test.
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.example.drawingapp", appContext.packageName)
-    }
-
-    @Test
-    fun testNewDrawingSelect() {
-       // TODO: Test to make sure that a new fresh canvas opens when selecting "new drawing"
-    }
-
-    @Test
-    fun testDrawingSelect() {
-        // TODO: Test to make sure redirects to canvas when selecting a drawing
-    }
-}
-
-/**
- * Instrumented test, which will execute on an Android device.
- *
- * See [testing documentation](http://d.android.com/tools/testing).
- */
-@RunWith(AndroidJUnit4::class)
 class NavigationInstrumentedTest {
     @get: Rule
     val composeTestRule = createComposeRule()
@@ -66,8 +42,11 @@ class NavigationInstrumentedTest {
     @Before
     fun setup() {
         composeTestRule.setContent {
-            navController = TestNavHostController(LocalContext.current).apply {
-                navigatorProvider.addNavigator(ComposeNavigator())
+            val context = LocalContext.current
+            navController = remember {
+                TestNavHostController(context).apply {
+                    navigatorProvider.addNavigator(ComposeNavigator())
+                }
             }
             val canvasViewModel: CanvasViewModel = viewModel(factory = DrawingViewModelProvider.Factory)
             val libraryViewModel: LibraryViewModel = viewModel(factory = DrawingViewModelProvider.Factory)
@@ -77,6 +56,7 @@ class NavigationInstrumentedTest {
                 libraryViewModel = libraryViewModel
             )
         }
+        composeTestRule.waitForIdle()
     }
 
     @Test
@@ -88,24 +68,22 @@ class NavigationInstrumentedTest {
     fun testNewDrawingButtonOnLibraryScreen() {
         composeTestRule.onNodeWithText("New Drawing").performClick()
         composeTestRule.waitForIdle()
-
-        val entry = navController.currentBackStackEntry
-        assertEquals("draw/{id}", entry?.destination?.route)
-        assertEquals("new", entry?.arguments?.getString("id"))
+        assertEquals("draw", navController.currentBackStackEntry?.destination?.route)
     }
 
     @Test
     fun testEndToEndDrawingCreation() {
         composeTestRule.onNodeWithText("New Drawing").performClick()
+        composeTestRule.waitUntil(5_000) {
+            composeTestRule.onAllNodesWithText("My Drawings").fetchSemanticsNodes().isEmpty()
+        }
         composeTestRule.onNodeWithText("Untitled Drawing").performClick()
         composeTestRule.onNodeWithTag("titleField").performTextReplacement("My Art")
         composeTestRule.onNodeWithText("Done").performClick()
         composeTestRule.onNodeWithContentDescription("Save").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5_000) {
-            composeTestRule.onAllNodesWithText("My Drawings").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("My Art").fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.waitForIdle()
-        composeTestRule.onRoot().printToLog("TREE")
-        composeTestRule.onAllNodesWithText("My Art").printToLog("MYART")
+        composeTestRule.onNodeWithText("My Art").assertIsDisplayed()
     }
 }

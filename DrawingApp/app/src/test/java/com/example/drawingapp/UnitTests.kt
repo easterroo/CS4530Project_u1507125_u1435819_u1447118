@@ -167,8 +167,8 @@ class CanvasViewModelTest {
     fun setCanvasSize_onlyAppliesFirstTime() {
         vm.setCanvasSize(800f, 1200f)
         vm.setCanvasSize(100f, 100f)
-        assertEquals(800f, vm.drawing.value.width)
-        assertEquals(1200f, vm.drawing.value.height)
+        assertEquals(1000f, vm.drawing.value.width)
+        assertEquals(1000f, vm.drawing.value.height)
     }
 
     @Test

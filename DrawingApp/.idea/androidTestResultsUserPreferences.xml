@@ -11,6 +11,7 @@
                   <entry key="Duration" value="90" />
                   <entry key="Medium_Phone" value="120" />
                   <entry key="Tests" value="360" />
+                  <entry key="motorola moto g play - 2024" value="120" />
                 </map>
               </option>
             </AndroidTestResultsTableState>
@@ -24,6 +25,33 @@
                   <entry key="Duration" value="90" />
                   <entry key="Medium_Phone" value="120" />
                   <entry key="Tests" value="360" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="177920098">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Medium_Phone" value="120" />
+                  <entry key="Tests" value="360" />
+                  <entry key="motorola moto g play - 2024" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="1254362992">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Tests" value="360" />
+                  <entry key="motorola moto g play - 2024" value="120" />
                 </map>
               </option>
             </AndroidTestResultsTableState>

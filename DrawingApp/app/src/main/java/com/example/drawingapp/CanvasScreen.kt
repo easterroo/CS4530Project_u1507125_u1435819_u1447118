@@ -102,7 +102,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                         TextField(
                             value = title,
                             onValueChange = { title = it },
-
+                            modifier = Modifier.testTag("titleField"),
                             textStyle = TextStyle(fontSize = 22.sp),
                             singleLine = true
                         )
@@ -224,7 +224,7 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                         {
                             OutlinedTextField(
                                 modifier = Modifier.fillMaxWidth()
-                                    .testTag("titleField"),
+                                    .testTag("brushSizeField"),
                                 value = brushSizeInput,
                                 onValueChange = { newSize ->
                                     brushSizeInput = newSize

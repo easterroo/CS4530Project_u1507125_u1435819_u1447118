@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -16,10 +17,12 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -176,14 +179,14 @@ class LibraryViewModel(
     /** Deleted drawing */
     fun deleteDrawing(id: Int, context: Context?) {
         viewModelScope.launch {
-            val fetchedDrawing = repository.getDrawing(id)
-            if (context != null && fetchedDrawing != null && fetchedDrawing.filePath.isNotEmpty()) {
-                val resolver = context.contentResolver
-                try {
-                    val uri = fetchedDrawing.filePath.toUri()
-                    resolver.delete(uri, null, null)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+            withContext(Dispatchers.IO) {
+                val drawing = repository.getDrawing(id)
+                if (drawing != null && drawing.filePath.isNotBlank()) {
+                    try {
+                        File(drawing.filePath).delete()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
             repository.removeDrawing(id)
@@ -202,6 +205,53 @@ class LibraryViewModel(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(intent, "Share drawing"))
+        }
+    }
+
+    fun importImage(uri: Uri, context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+            // 1. Read just the dimensions
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, bounds)
+            }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@launch
+
+            // 2. Decode downsampled to avoid out-of-memory on big photos
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 1000) sample *= 2
+            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+            val source = context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, opts)
+            } ?: return@launch
+
+            // 3. Scale so the longest side is 1000
+            val scale = 1000f / maxOf(source.width, source.height)
+            val w = (source.width * scale).toInt().coerceAtLeast(1)
+            val h = (source.height * scale).toInt().coerceAtLeast(1)
+            val scaled = Bitmap.createScaledBitmap(source, w, h, true)
+            // 4. Flatten onto white (handles transparent PNGs) and save
+            val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            android.graphics.Canvas(out).apply {
+                drawColor(android.graphics.Color.WHITE)
+                drawBitmap(scaled, 0f, 0f, null)
+            }
+            val dir = File(context.filesDir, "drawings").apply { mkdirs() }
+            val file = File(dir, "drawing_${System.currentTimeMillis()}.png")
+            file.outputStream().use { out.compress(Bitmap.CompressFormat.PNG, 100, it) }
+
+            repository.addDrawing(
+                DrawingData(
+                    title = "Imported Image",
+                    width = w.toFloat(),
+                    height = h.toFloat(),
+                    filePath = file.absolutePath
+                )
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         }
     }
 }

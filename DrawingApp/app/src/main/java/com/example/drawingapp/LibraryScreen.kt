@@ -3,6 +3,10 @@ package com.example.drawingapp
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,11 +44,12 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                   onOpenDrawing: (Int) -> Unit = {},
-                  onNewDrawing: () -> Unit = {},
-                  onImportImage: () -> Unit = {}) {
+                  onNewDrawing: () -> Unit = {}) {
     val drawings by myVM.drawingsSnapshots.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> if (uri != null) myVM.importImage(uri, context) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -56,7 +61,9 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                         Text("My Drawings")
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             TextButton(onClick = onNewDrawing) { Text("New Drawing") }
-                            TextButton(onClick = onImportImage) { Text("Import Image")}
+                            TextButton(onClick = {
+                                picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            }) { Text("Import Image")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Select")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Cloud & Backup")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Sharing")}
