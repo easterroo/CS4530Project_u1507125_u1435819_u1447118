@@ -2,6 +2,7 @@ package com.example.drawingapp
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.Color
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -185,6 +187,21 @@ class LibraryViewModel(
                 }
             }
             repository.removeDrawing(id)
+        }
+    }
+
+    fun shareDrawing(id: Int, context: Context) {
+        viewModelScope.launch {
+            val fetchedDrawing = repository.getDrawing(id) ?: return@launch
+            val file = File(fetchedDrawing.filePath)
+            if (!file.exists()) return@launch
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share drawing"))
         }
     }
 }

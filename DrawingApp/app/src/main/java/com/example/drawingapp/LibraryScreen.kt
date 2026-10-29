@@ -40,7 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                   onOpenDrawing: (Int) -> Unit = {},
-                  onNewDrawing: () -> Unit = {}) {
+                  onNewDrawing: () -> Unit = {},
+                  onImportImage: () -> Unit = {}) {
     val drawings by myVM.drawingsSnapshots.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -55,6 +56,7 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                         Text("My Drawings")
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             TextButton(onClick = onNewDrawing) { Text("New Drawing") }
+                            TextButton(onClick = onImportImage) { Text("Import Image")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Select")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Cloud & Backup")}
                             // TODO: TextButton(onClick = onNewDrawing) { Text("Sharing")}
@@ -76,7 +78,8 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                     thumbnail = drawing.value.copy(),
                     title = myVM.getDrawing(drawing.key).title,
                     onOpen = { onOpenDrawing(drawing.key) },
-                    onDelete = { myVM.deleteDrawing(drawing.key, context) }
+                    onDelete = { myVM.deleteDrawing(drawing.key, context) },
+                    onExport = { myVM.shareDrawing(drawing.key, context)}
                 )
             }
         }
@@ -97,7 +100,8 @@ private fun DrawingCard(
     thumbnail: ImageBitmap,
     title: String,
     onOpen: () -> Unit,
-    onDelete: () -> Unit) {
+    onDelete: () -> Unit,
+    onExport: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
 
     Column {
@@ -136,6 +140,13 @@ private fun DrawingCard(
                             onClick = {
                                 menuOpen = false
                                 onDelete()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Export") },
+                            onClick = {
+                                menuOpen = false;
+                                onExport()
                             }
                         )
                     }
