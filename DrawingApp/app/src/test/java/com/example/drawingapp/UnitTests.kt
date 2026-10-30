@@ -7,14 +7,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.Before
-
-@OptIn(ExperimentalCoroutinesApi::class)
 
 class FakeDrawingDAO : DrawingDAO {
     private val drawings = mutableListOf<DrawingData>()
@@ -103,11 +102,59 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun getDrawing_knownId_returnsCorrect() {
+        val data = DrawingData(id = 1, title = "A")
+        val data2 = DrawingData(id = 2, title = "B")
+        val data3 = DrawingData(id = 3, title = "C")
+
+        runBlocking {
+            vm.saveDrawing(data = data, drawing = DrawingCanvas(), context = null)
+            vm.saveDrawing(data = data2, drawing = DrawingCanvas(), context = null)
+            vm.saveDrawing(data = data3, drawing = DrawingCanvas(), context = null)
+        }
+
+        val fetched = vm.getDrawing(2)
+        assertNotNull(fetched)
+        assertEquals("B", fetched.title)
+        assertEquals(2, fetched.id)
+    }
+
+    @Test
     fun saveAndGetDrawing() {
         val data = DrawingData(id = 1, title = "A")
         vm.saveDrawing(data = data, drawing = DrawingCanvas(), context = null)
         val fetched = vm.getDrawing(1)
         assertNotNull(fetched)
+        assertEquals("A", fetched.title)
+        assertEquals(1, fetched.id)
+    }
+
+    @Test
+    fun deleteDrawing_drawingRemoved() {
+        val data = DrawingData(id = 1, title = "To Be Deleted")
+
+        runBlocking {
+            vm.saveDrawing(data = data, drawing = DrawingCanvas(), context = null)
+            vm.deleteDrawing(id = 1, context = null)
+        }
+
+        assertEquals(0, vm.drawingsSnapshots.value.size)
+    }
+
+    @Test
+    fun saveDrawing_updatesExistingDrawing() {
+        val initial = DrawingData(id = 1, title = "Old Title")
+        runBlocking {
+            vm.saveDrawing(data = initial, drawing = DrawingCanvas(width = 500f, height = 500f), context = null)
+        }
+
+        val updated = DrawingData(id = 1, title = "New Title")
+        runBlocking {
+            vm.saveDrawing(data = updated, drawing = DrawingCanvas(width = 800f, height = 800f), context = null)
+        }
+
+        assertEquals("New Title", vm.getDrawing(1).title)
+        assertEquals(800f, vm.getDrawing(1).width)
     }
 }
 
@@ -147,6 +194,15 @@ class CanvasViewModelTest {
     }
 
     @Test
+    fun eraserStroke_appends() {
+        val eraserStroke = stroke(listOf(Offset(0f, 0f)), color = Color.Transparent)
+        vm.addStroke(eraserStroke)
+        vm.addStroke(eraserStroke)
+        assertEquals(2, vm.drawing.value.strokes.size)
+        assertEquals(Color.Transparent, vm.drawing.value.strokes[0].color)
+    }
+
+    @Test
     fun updateLastStroke_replacesOnlyLast() {
         val first = stroke(listOf(Offset(0f, 0f)))
         vm.addStroke(first)
@@ -175,9 +231,10 @@ class CanvasViewModelTest {
     fun openDrawing_resetsStrokesAndSetsId() {
         vm.setCanvasSize(800f, 1200f)
         vm.addStroke(stroke(listOf(Offset.Zero)))
-        vm.openDrawing(null, 5)
+        vm.openDrawing(null, 5, "My Test Drawing")
         assertTrue(vm.drawing.value.strokes.isEmpty())
         assertEquals(5, vm.id.value)
+        assertEquals("My Test Drawing", vm.title.value)
     }
 
     @Test
@@ -188,5 +245,36 @@ class CanvasViewModelTest {
         assertEquals(32f, vm.brushSize.value)
         assertEquals(BrushShape.SQUARE, vm.brushShape.value)
         assertEquals(Color.Blue, vm.currentColor.value)
+    }
+
+    @Test
+    fun updateTitle_updatesState() {
+        vm.openDrawing(null, 5)
+        vm.updateTitle("New Art")
+        assertEquals("New Art", vm.title.value)
+    }
+
+    @Test
+    fun newDrawing_resetsAllState() {
+        vm.addStroke(stroke(listOf(Offset.Zero)))
+        vm.updateTitle("Something")
+        vm.newDrawing()
+        
+        assertTrue(vm.drawing.value.strokes.isEmpty())
+        assertEquals(0, vm.id.value)
+        assertNull(vm.image.value)
+        assertEquals("Untitled Drawing", vm.title.value)
+    }
+
+    @Test
+    fun newDrawing_updatesDatabase() {
+        vm.newDrawing()
+        assertEquals(0, vm.id.value)
+    }
+
+    @Test
+    fun openDrawing_updatesDatabase() {
+        vm.openDrawing(null, 5)
+        assertEquals(5, vm.id.value)
     }
 }

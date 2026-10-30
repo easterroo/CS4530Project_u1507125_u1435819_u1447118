@@ -1,11 +1,8 @@
 package com.example.drawingapp
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,7 +27,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-
+import androidx.compose.ui.platform.testTag
 
 
 /**
@@ -86,7 +83,7 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                     title = myVM.getDrawing(drawing.key).title,
                     onOpen = { onOpenDrawing(drawing.key) },
                     onDelete = { myVM.deleteDrawing(drawing.key, context) },
-                    onExport = { myVM.shareDrawing(drawing.key, context)}
+                    onShare = { myVM.shareDrawing(drawing.key, context)}
                 )
             }
         }
@@ -108,7 +105,7 @@ private fun DrawingCard(
     title: String,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
-    onExport: () -> Unit) {
+    onShare: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
 
     Column {
@@ -117,6 +114,7 @@ private fun DrawingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
+                .testTag("drawingCard")
                 .clickable(onClick = onOpen)
         ) {
             Box(
@@ -135,6 +133,7 @@ private fun DrawingCard(
                     IconButton(
                         onClick = { menuOpen = true },
                         modifier = Modifier.size(32.dp)
+                            .testTag("dropdownMenu")
                     ) {
                         Text("⋮")
                     }
@@ -153,7 +152,7 @@ private fun DrawingCard(
                             text = { Text("Export") },
                             onClick = {
                                 menuOpen = false;
-                                onExport()
+                                onShare()
                             }
                         )
                     }

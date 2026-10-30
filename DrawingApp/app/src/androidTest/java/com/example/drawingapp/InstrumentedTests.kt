@@ -3,21 +3,16 @@ package com.example.drawingapp
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.printToLog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.ComposeNavigator
-import androidx.navigation.compose.NavHost
 import androidx.navigation.testing.TestNavHostController
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 
 import org.junit.Test
@@ -85,5 +80,55 @@ class NavigationInstrumentedTest {
             composeTestRule.onAllNodesWithText("My Art").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithText("My Art").assertIsDisplayed()
+    }
+
+    @Test
+    fun testShowSavedDrawingPreview() {
+        composeTestRule.onNodeWithText("New Drawing").performClick()
+        composeTestRule.onNodeWithText("Untitled Drawing").performClick()
+        composeTestRule.onNodeWithTag("titleField").performTextReplacement("test")
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithContentDescription("Save").performClick()
+        composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("test").assertIsDisplayed()
+    }
+
+    @Test
+    fun testRenameDrawingTwice() {
+        composeTestRule.onNodeWithText("New Drawing").performClick()
+        composeTestRule.onNodeWithText("Untitled Drawing").performClick()
+        composeTestRule.onNodeWithTag("titleField").performTextReplacement("test2")
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithContentDescription("Save").performClick()
+
+        composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("test2").assertIsDisplayed()
+
+        composeTestRule.onNodeWithTag("drawingCard").performClick()
+        composeTestRule.onNodeWithText("test2").performClick()
+        composeTestRule.onNodeWithTag("titleField").performTextReplacement("reopened")
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithContentDescription("Save").performClick()
+
+        composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("reopened").assertIsDisplayed()
+    }
+
+    @Test
+    fun testDeleteDrawing() {
+        composeTestRule.onNodeWithText("New Drawing").performClick()
+        composeTestRule.onNodeWithText("Untitled Drawing").performClick()
+        composeTestRule.onNodeWithTag("titleField").performTextReplacement("test3")
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.onNodeWithContentDescription("Save").performClick()
+
+        composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("test3").assertIsDisplayed()
+
+        composeTestRule.onNodeWithTag("dropdownMenu").performClick()
+        composeTestRule.onNodeWithText("Delete").performClick()
+
+        composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("test3").assertDoesNotExist()
     }
 }
