@@ -1,7 +1,13 @@
-package com.example.drawingapp
-
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.example.drawingapp.DrawingDAO
+import com.example.drawingapp.DrawingData
+import com.example.drawingapp.DrawingRepository
+import com.example.drawingapp.BrushShape
+import com.example.drawingapp.DrawingCanvas
+import com.example.drawingapp.Stroke
+import com.example.drawingapp.CanvasViewModel
+import com.example.drawingapp.LibraryViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -221,6 +227,7 @@ class CanvasViewModelTest {
 
     @Test
     fun setCanvasSize_onlyAppliesFirstTime() {
+        vm.newDrawing()
         vm.setCanvasSize(800f, 1200f)
         vm.setCanvasSize(100f, 100f)
         assertEquals(1000f, vm.drawing.value.width)

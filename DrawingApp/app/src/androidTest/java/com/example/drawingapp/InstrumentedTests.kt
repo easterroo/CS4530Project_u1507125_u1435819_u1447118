@@ -1,5 +1,3 @@
-package com.example.drawingapp
-
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
@@ -14,6 +12,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.drawingapp.AppNavigation
+import com.example.drawingapp.CanvasViewModel
+import com.example.drawingapp.DrawingViewModelProvider
+import com.example.drawingapp.LibraryViewModel
 
 import org.junit.Test
 import org.junit.runner.RunWith
