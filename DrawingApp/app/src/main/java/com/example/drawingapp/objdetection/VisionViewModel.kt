@@ -30,9 +30,15 @@ class VisionViewModel(
     val uiState: StateFlow<VisionUiState> = _uiState.asStateFlow()
 
     /**
-     * Triggers object detection for an image file stored in the drawings folder.
+     * Triggers object detection using a file path string.
      */
-    fun detectObjects(imageFile: File) {
+    fun detectObjects(filePath: String) {
+        if (filePath.isBlank()) {
+            _uiState.value = VisionUiState.Error("Image file path is empty.")
+            return
+        }
+        val imageFile = File(filePath)
+
         viewModelScope.launch {
             _uiState.value = VisionUiState.Loading
             val result = visionRepository.detectObjectsInImage(imageFile)
@@ -47,17 +53,6 @@ class VisionViewModel(
                 )
             }
         }
-    }
-
-    /**
-     * Triggers object detection using a file path string.
-     */
-    fun detectObjects(filePath: String) {
-        if (filePath.isBlank()) {
-            _uiState.value = VisionUiState.Error("Image file path is empty.")
-            return
-        }
-        detectObjects(File(filePath))
     }
 
     /**
