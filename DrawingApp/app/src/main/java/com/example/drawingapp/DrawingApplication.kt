@@ -2,6 +2,9 @@ package com.example.drawingapp
 
 import android.app.Application
 import androidx.room.Room
+import com.example.drawingapp.database.DrawingDatabase
+import com.example.drawingapp.database.DrawingRepository
+import com.example.drawingapp.objdetection.VisionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
@@ -17,4 +20,5 @@ class DrawingApplication : Application() {
     }
 
     val drawingRepository by lazy { DrawingRepository(scope, db.drawingDao()) }
+    val visionRepository by lazy { VisionRepository() }
 }
