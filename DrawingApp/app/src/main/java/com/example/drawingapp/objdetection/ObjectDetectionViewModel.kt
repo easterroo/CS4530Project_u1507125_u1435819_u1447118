@@ -22,8 +22,8 @@ sealed interface VisionUiState {
  * Dedicated ViewModel for Google Vision API object detection.
  * Enforces separation of concerns by safely calling VisionRepository and exposing UI state.
  */
-class VisionViewModel(
-    private val visionRepository: VisionRepository
+class ObjectDetectionViewModel(
+    private val visionRepository: ObjectDetectionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<VisionUiState>(VisionUiState.Idle)

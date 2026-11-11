@@ -28,8 +28,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val visionApiKey = secrets.getProperty("VISION_API_KEY") ?: ""
-        buildConfigField("String", "VISION_API_KEY", "\"$visionApiKey\"")
+        val geminiApiKey = secrets.getProperty("GEMINI_API_KEY") ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -91,8 +91,8 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.kotlinx.serialization.json)
 
-    // Google Vision API
-    implementation(libs.google.api.services.vision)
+    // Gemini API
+    implementation(libs.generativeai)
 
     testImplementation(libs.junit)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
