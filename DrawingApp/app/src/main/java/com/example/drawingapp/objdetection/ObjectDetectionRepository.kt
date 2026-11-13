@@ -15,54 +15,56 @@ import java.io.File
 /**
  * Repository responsible for interacting with the Google Vision API to detect objects in image files.
  */
-class ObjectDetectionRepository() {
-    private val model = GenerativeModel(
-        modelName = "gemini-3.5-flash",
-        apiKey = BuildConfig.GEMINI_API_KEY,
-        generationConfig = generationConfig {
-            responseMimeType = "application/json"
-            responseSchema = Schema(
-                name = "DetectedObjectList",
-                type = FunctionType.ARRAY,
-                description = "List of detected objects",
-                items = Schema(
-                    name = "DetectedObject",
-                    type = FunctionType.OBJECT,
-                    properties = mapOf(
-                        "label" to Schema(
-                            name = "Label",
-                            type = FunctionType.STRING,
-                            description = "The name of the object"
-                        ),
-                        "confidenceScore" to Schema(
-                            name = "ConfidenceScore",
-                            type = FunctionType.NUMBER,
-                            description = "Confidence score of the object"
-                        ),
-                        "boundingBox" to Schema(
-                            name = "BoundingBox",
-                            type = FunctionType.ARRAY,
-                            items = Schema(
-                                name = "Coordinate",
-                                type = FunctionType.INTEGER,
-                                description = "A value on the x or y axis"
+open class ObjectDetectionRepository() {
+    private val model by lazy {
+        GenerativeModel(
+            modelName = "gemini-3.5-flash",
+            apiKey = BuildConfig.GEMINI_API_KEY,
+            generationConfig = generationConfig {
+                responseMimeType = "application/json"
+                responseSchema = Schema(
+                    name = "DetectedObjectList",
+                    type = FunctionType.ARRAY,
+                    description = "List of detected objects",
+                    items = Schema(
+                        name = "DetectedObject",
+                        type = FunctionType.OBJECT,
+                        properties = mapOf(
+                            "label" to Schema(
+                                name = "Label",
+                                type = FunctionType.STRING,
+                                description = "The name of the object"
                             ),
-                            description = "Bounding box coordinates [xmin, ymin, xmax, ymax]"
-                        )
-                    ),
-                    required = listOf("label", "confidenceScore", "boundingBox"),
-                    description = ""
+                            "confidenceScore" to Schema(
+                                name = "ConfidenceScore",
+                                type = FunctionType.NUMBER,
+                                description = "Confidence score of the object"
+                            ),
+                            "boundingBox" to Schema(
+                                name = "BoundingBox",
+                                type = FunctionType.ARRAY,
+                                items = Schema(
+                                    name = "Coordinate",
+                                    type = FunctionType.INTEGER,
+                                    description = "A value on the x or y axis"
+                                ),
+                                description = "Bounding box coordinates [xmin, ymin, xmax, ymax]"
+                            )
+                        ),
+                        required = listOf("label", "confidenceScore", "boundingBox"),
+                        description = ""
+                    )
                 )
-            )
-        }
-    )
+            }
+        )
+    }
 
     /**
      * Sends an image file from the drawings folder to Google Vision API for object detection.
      *
      * Returns a [Result] containing a list of [DetectedObject] (label, confidence score, and bounding box coordinates).
      */
-    suspend fun detectObjectsInImage(imageFile: File): Result<List<DetectedObject>> = withContext(Dispatchers.IO) {
+    open suspend fun detectObjectsInImage(imageFile: File): Result<List<DetectedObject>> = withContext(Dispatchers.IO) {
         runCatching {
             if (model.apiKey.isBlank()) {
                 throw IllegalArgumentException("Vision API key is not configured in secrets.properties.")
