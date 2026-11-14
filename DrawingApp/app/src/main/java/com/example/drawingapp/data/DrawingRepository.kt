@@ -1,4 +1,4 @@
-package com.example.drawingapp
+package com.example.drawingapp.data
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

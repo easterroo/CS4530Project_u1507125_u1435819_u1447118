@@ -3,6 +3,8 @@ package com.example.drawingapp
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.drawingapp.views.CanvasViewModel
+import com.example.drawingapp.views.LibraryViewModel
 
 object DrawingViewModelProvider {
     val Factory = viewModelFactory {

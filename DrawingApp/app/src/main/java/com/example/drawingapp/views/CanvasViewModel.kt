@@ -1,8 +1,12 @@
-package com.example.drawingapp
+package com.example.drawingapp.views
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
+import com.example.drawingapp.BrushShape
+import com.example.drawingapp.DrawingCanvas
+import com.example.drawingapp.Stroke
+import com.example.drawingapp.data.DrawingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -113,4 +117,3 @@ class CanvasViewModel(private val repository: DrawingRepository) : ViewModel() {
         _title.value = "Untitled Drawing"
     }
 }
-

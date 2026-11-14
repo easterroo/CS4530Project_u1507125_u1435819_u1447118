@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.drawingapp.views.CanvasViewModel
 
 /**
  * Initializes the Canvas Screen that is used to draw on to update drawings

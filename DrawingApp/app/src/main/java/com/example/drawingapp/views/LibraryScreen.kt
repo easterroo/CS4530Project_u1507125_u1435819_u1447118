@@ -28,7 +28,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-
+import com.example.drawingapp.views.LibraryViewModel
 
 /**
  * Main library screen that allows you to add, edit, and delete drawings

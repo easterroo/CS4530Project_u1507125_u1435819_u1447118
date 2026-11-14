@@ -13,6 +13,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.drawingapp.data.DrawingData
+import com.example.drawingapp.views.CanvasViewModel
+import com.example.drawingapp.views.LibraryViewModel
 
 /**
  * Defines the app's navigation and routing between pages

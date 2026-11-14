@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.drawingapp.ui.theme.DrawingAppTheme
+import com.example.drawingapp.views.CanvasViewModel
+import com.example.drawingapp.views.LibraryViewModel
 
 /**
  * Main Activity used to run the Drawing App program.

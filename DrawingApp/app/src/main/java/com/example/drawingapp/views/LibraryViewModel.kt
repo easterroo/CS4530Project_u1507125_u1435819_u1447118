@@ -1,4 +1,4 @@
-package com.example.drawingapp
+package com.example.drawingapp.views
 
 import android.app.Application
 import android.content.Context
@@ -6,17 +6,24 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.drawingapp.DrawingCanvas
+import com.example.drawingapp.data.DrawingData
+import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.drawStrokes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -118,19 +125,19 @@ class LibraryViewModel(
                 }
 
                 val imageBitmap = ImageBitmap(width, height)
-                val canvas = androidx.compose.ui.graphics.Canvas(imageBitmap)
+                val canvas = Canvas(imageBitmap)
                 val drawScope = CanvasDrawScope()
                 drawScope.draw(
                     density = Density(1f),
                     layoutDirection = LayoutDirection.Ltr,
                     canvas = canvas,
-                    size = androidx.compose.ui.geometry.Size(width.toFloat(), height.toFloat())
+                    size = Size(width.toFloat(), height.toFloat())
                 ) {
                     drawRect(color = Color.White)
                     if (existingImage != null) {
                         drawImage(
                             image = existingImage,
-                            dstSize = androidx.compose.ui.unit.IntSize(width, height)
+                            dstSize = IntSize(width, height)
                         )
                     }
                     drawStrokes(drawing.strokes)

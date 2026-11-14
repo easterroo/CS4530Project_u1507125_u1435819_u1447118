@@ -5,6 +5,9 @@ import androidx.room.Room
 import com.example.drawingapp.objdetection.ObjectDetectionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.data.DrawingDatabase
+
 
 class DrawingApplication : Application() {
     val scope = CoroutineScope(SupervisorJob())
