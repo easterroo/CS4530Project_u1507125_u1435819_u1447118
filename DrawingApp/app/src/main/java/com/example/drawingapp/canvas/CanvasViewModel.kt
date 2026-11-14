@@ -1,16 +1,24 @@
 package com.example.drawingapp.canvas
 
+import android.graphics.Bitmap
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import com.example.drawingapp.BrushShape
 import com.example.drawingapp.DrawingCanvas
 import com.example.drawingapp.Stroke
 import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.drawStrokes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import androidx.compose.ui.unit.LayoutDirection
 
 /**
  * ViewModel representing the Canvas and the information held in it, including brush size, stroke, and color information
@@ -110,12 +118,32 @@ class CanvasViewModel(private val repository: DrawingRepository) : ViewModel() {
         _drawing.value = DrawingCanvas(width = initialWidth, height = initialHeight)
     }
 
-    suspend fun getFilePath(): String? = repository.getDrawing(id.value)?.filePath
-
     fun newDrawing() {
         _drawing.value = DrawingCanvas()
         _image.value = null
         _id.value = 0
         _title.value = "Untitled Drawing"
+    }
+
+    /** Used to take a "screenshot" of the canvas for AI to analyze */
+    fun renderDrawingToBitmap(drawing: DrawingCanvas, image: ImageBitmap?): Bitmap {
+        val w = drawing.width.toInt()
+        val h = drawing.height.toInt()
+
+        val layer = ImageBitmap(w, h)
+        CanvasDrawScope().draw(
+            Density(1f), LayoutDirection.Ltr,
+            androidx.compose.ui.graphics.Canvas(layer),
+            Size(w.toFloat(), h.toFloat())
+        ) {
+            image?.let { drawImage(it, dstSize = IntSize(w, h)) }
+            drawStrokes(drawing.strokes)
+        }
+
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(result)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        canvas.drawBitmap(layer.asAndroidBitmap(), 0f, 0f, null)
+        return result
     }
 }

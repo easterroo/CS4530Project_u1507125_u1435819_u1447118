@@ -13,9 +13,7 @@ data class DrawingCanvas (
     val strokes: List<Stroke> = listOf(),
     val width: Float = 1000f,
     val height: Float = 1000f,
-) {
-
-}
+)
 
 /**
  * Holds information about the actual strokes used in the drawing

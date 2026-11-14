@@ -241,8 +241,13 @@ fun CanvasScreen(
                             onClick = {
                                 showAiPopup = true
                                 scope.launch {
-                                    val path = canvasViewModel.getFilePath()
-                                    objectDetectionViewModel.detectObjects(path ?: "")
+                                    val path = withContext(Dispatchers.Default) {
+                                        val bitmap = canvasViewModel.renderDrawingToBitmap(drawing, image)
+                                        val file = File(context.cacheDir, "ai_analysis.png")
+                                        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                                        file.absolutePath
+                                    }
+                                    objectDetectionViewModel.detectObjects(path)
                                 }
                             }
                         )

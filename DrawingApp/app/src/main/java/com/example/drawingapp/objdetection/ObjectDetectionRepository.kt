@@ -1,5 +1,6 @@
 package com.example.drawingapp.objdetection
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.example.drawingapp.BuildConfig
 import com.google.ai.client.generativeai.GenerativeModel
@@ -49,7 +50,7 @@ open class ObjectDetectionRepository() {
                             "confidenceScore" to Schema(
                                 name = "ConfidenceScore",
                                 type = FunctionType.NUMBER,
-                                description = "Confidence score of the object"
+                                description = "Confidence score of the object as a decimal between 0.0 and 1.0"
                             ),
                             "boundingBox" to Schema(
                                 name = "BoundingBox",
@@ -84,12 +85,23 @@ open class ObjectDetectionRepository() {
                 throw IllegalArgumentException("Image file does not exist at path: ${imageFile.absolutePath}")
             }
 
-            val imageBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+            val original = BitmapFactory.decodeFile(imageFile.absolutePath)
+            val maxSide = 1024
+            val scale = maxSide.toFloat() / maxOf(original.width, original.height)
+            val imageBitmap = if (scale < 1f) {
+                Bitmap.createScaledBitmap(
+                    original,
+                    (original.width * scale).toInt(),
+                    (original.height * scale).toInt(),
+                    true
+                )
+            } else original
 
             val prompt = """
                 Locate the main objects in this image. 
                 For each object, provide its label, confidence score, and bounding box coordinates 
                 normalized to a 0-1000 scale in the format: [xmin, ymin, xmax, ymax].
+                The confidence score must be a decimal between 0.0 and 1.0 (for example 0.95 means 95% sure).
                 Return the output strictly as a JSON list. 
                 Example: [{"label": "dog", "confidenceScore": 99.5, "boundingBox": [100, 200, 500, 800]}]
             """.trimIndent()

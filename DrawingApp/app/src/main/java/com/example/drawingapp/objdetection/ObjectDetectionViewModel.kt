@@ -33,6 +33,8 @@ class ObjectDetectionViewModel(
      * Triggers object detection using a file path string.
      */
     fun detectObjects(filePath: String) {
+        if (_uiState.value is VisionUiState.Loading) return
+
         if (filePath.isBlank()) {
             _uiState.value = VisionUiState.Error("Image file path is empty.")
             return
