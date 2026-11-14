@@ -9,8 +9,19 @@ import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
+
+/**
+ * Used to match Gemini's JSON
+ */
+@Serializable
+private data class DetectedObjectDto(
+    val label: String,
+    val confidenceScore: Float,
+    val boundingBox: List<Int>
+)
 
 /**
  * Repository responsible for interacting with the Google Vision API to detect objects in image files.
@@ -107,7 +118,20 @@ open class ObjectDetectionRepository() {
                 ignoreUnknownKeys = true // Prevents crashes if Gemini adds extra fields
                 coerceInputValues = true
             }
-            jsonConfig.decodeFromString<List<DetectedObject>>(cleanJson)
+            jsonConfig.decodeFromString<List<DetectedObjectDto>>(cleanJson)
+                .filter {it.boundingBox.size == 4}
+                .map {
+                    DetectedObject(
+                        label = it.label,
+                        confidenceScore = it.confidenceScore,
+                        boundingBox = BoundingBox(
+                            minX = it.boundingBox[0],
+                            minY = it.boundingBox[1],
+                            maxX = it.boundingBox[2],
+                            maxY = it.boundingBox[3]
+                        )
+                    )
+                }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList() // Return empty list if formatting failed

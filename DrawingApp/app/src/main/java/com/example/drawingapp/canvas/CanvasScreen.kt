@@ -1,5 +1,6 @@
 package com.example.drawingapp
 
+import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -47,6 +48,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,12 +62,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.drawingapp.views.CanvasViewModel
+import com.example.drawingapp.canvas.AnalysisPopup
+import com.example.drawingapp.canvas.CanvasViewModel
+import com.example.drawingapp.objdetection.ObjectDetectionViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * Initializes the Canvas Screen that is used to draw on to update drawings
@@ -75,7 +84,11 @@ import com.example.drawingapp.views.CanvasViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Unit) {
+fun CanvasScreen(
+    canvasViewModel: CanvasViewModel,
+    objectDetectionViewModel: ObjectDetectionViewModel,
+    onSave: (DrawingCanvas) -> Unit
+) {
     val drawing by canvasViewModel.drawing.collectAsStateWithLifecycle()
     val image by canvasViewModel.image.collectAsStateWithLifecycle()
     val id by canvasViewModel.id.collectAsStateWithLifecycle()
@@ -84,13 +97,18 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
     val brushSize by canvasViewModel.brushSize.collectAsStateWithLifecycle()
     val currentColor by canvasViewModel.currentColor.collectAsStateWithLifecycle()
     val strokes = drawing.strokes
-    
+    val visionState by objectDetectionViewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var eraseMode by remember { mutableStateOf(false) }
     var currentStrokeList by remember { mutableStateOf<List<Offset>>(emptyList()) }
 
     var isEditingTitle by remember { mutableStateOf(false) }
     var title by rememberSaveable(id, titleState) { mutableStateOf(titleState) }
     var colorSelectionMenu by remember { mutableStateOf(true) }
+
+    var showAiPopup by remember {mutableStateOf(false)}
 
     Scaffold(
         modifier = Modifier
@@ -213,7 +231,21 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                         BrushShapeSelectionButton(BrushShape.LINE, canvasViewModel::setBrushShape)
                         BrushShapeSelectionButton(BrushShape.CIRCLE, canvasViewModel::setBrushShape)
                         BrushShapeSelectionButton(BrushShape.SQUARE, canvasViewModel::setBrushShape)
-
+                        IconButton (
+                            content = {
+                                Icon(
+                                    painter = painterResource(R.drawable.robot_icon),
+                                    contentDescription = "AI Analysis"
+                                )
+                            },
+                            onClick = {
+                                showAiPopup = true
+                                scope.launch {
+                                    val path = canvasViewModel.getFilePath()
+                                    objectDetectionViewModel.detectObjects(path ?: "")
+                                }
+                            }
+                        )
                         var expanded by remember { mutableStateOf(false) }
                         val presetSizes = listOf("4", "8", "12", "16", "20", "24", "28", "32", "36", "40", "44", "48")
                         var brushSizeInput by remember { mutableStateOf(brushSize.toInt().toString()) }
@@ -315,6 +347,15 @@ fun CanvasScreen(canvasViewModel: CanvasViewModel, onSave: (DrawingCanvas) -> Un
                 }
             }
         }
+    }
+
+    if (showAiPopup) {
+        AnalysisPopup(state = visionState,
+            onDismiss = {
+                showAiPopup = false
+                objectDetectionViewModel.resetState()
+            }
+        )
     }
 }
 

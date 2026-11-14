@@ -1,4 +1,4 @@
-package com.example.drawingapp.views
+package com.example.drawingapp.canvas
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -109,6 +109,8 @@ class CanvasViewModel(private val repository: DrawingRepository) : ViewModel() {
         }
         _drawing.value = DrawingCanvas(width = initialWidth, height = initialHeight)
     }
+
+    suspend fun getFilePath(): String? = repository.getDrawing(id.value)?.filePath
 
     fun newDrawing() {
         _drawing.value = DrawingCanvas()

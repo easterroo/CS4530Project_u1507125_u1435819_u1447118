@@ -7,6 +7,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -14,8 +17,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.drawingapp.data.DrawingData
-import com.example.drawingapp.views.CanvasViewModel
-import com.example.drawingapp.views.LibraryViewModel
+import com.example.drawingapp.canvas.CanvasViewModel
+import com.example.drawingapp.library.LibraryViewModel
+import com.example.drawingapp.objdetection.ObjectDetectionRepository
+import com.example.drawingapp.objdetection.ObjectDetectionViewModel
 
 /**
  * Defines the app's navigation and routing between pages
@@ -39,7 +44,13 @@ fun AppNavigation(
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getInt("id") ?: 0
             val context = LocalContext.current
+            val objectDetectionViewModel: ObjectDetectionViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { ObjectDetectionViewModel(ObjectDetectionRepository()) }
+                }
+            )
             var initialized by rememberSaveable { mutableStateOf(false) }
+
             LaunchedEffect(id) {
                 if (!initialized) {
                     initialized = true
@@ -50,6 +61,7 @@ fun AppNavigation(
             }
             CanvasScreen(
                 canvasViewModel = canvasViewModel,
+                objectDetectionViewModel,
                 onSave = { drawing ->
                     val data = DrawingData(
                         id = canvasViewModel.id.value,
@@ -67,6 +79,11 @@ fun AppNavigation(
         }
         composable("draw") {
             val context = LocalContext.current
+            val objectDetectionViewModel: ObjectDetectionViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { ObjectDetectionViewModel(ObjectDetectionRepository()) }
+                }
+            )
             var initialized by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(Unit) {
                 if (!initialized) {
@@ -76,6 +93,7 @@ fun AppNavigation(
             }
             CanvasScreen(
                 canvasViewModel = canvasViewModel,
+                objectDetectionViewModel,
                 onSave = { drawing ->
                     val data = DrawingData(
                         id = canvasViewModel.id.value,

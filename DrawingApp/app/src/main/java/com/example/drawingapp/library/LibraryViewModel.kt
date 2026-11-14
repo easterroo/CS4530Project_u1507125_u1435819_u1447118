@@ -1,4 +1,4 @@
-package com.example.drawingapp.views
+package com.example.drawingapp.library
 
 import android.app.Application
 import android.content.Context
