@@ -2,6 +2,8 @@ package com.example.drawingapp
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.example.drawingapp.canvas.CanvasViewModel
+import com.example.drawingapp.data.DrawingRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

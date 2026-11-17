@@ -1,5 +1,9 @@
 package com.example.drawingapp
 
+import com.example.drawingapp.data.DrawingDAO
+import com.example.drawingapp.data.DrawingData
+import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.library.LibraryViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

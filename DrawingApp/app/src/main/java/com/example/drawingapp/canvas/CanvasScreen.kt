@@ -37,9 +37,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -75,6 +79,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.roundToInt
 
 /**
  * Initializes the Canvas Screen that is used to draw on to update drawings
@@ -201,36 +206,91 @@ fun CanvasScreen(
                 BottomAppBar {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
-                            content = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Brush,
-                                    contentDescription = "Brush"
-                                )
-                            },
-                            onClick = {
+                        val selectedColors = IconButtonDefaults.iconToggleButtonColors(
+                            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        // Brush
+                        IconToggleButton(
+                            checked = !eraseMode,
+                            onCheckedChange = {
                                 eraseMode = false
                                 colorSelectionMenu = true
-                            }
-                        )
-                        IconButton(
-                            content = {
-                                Icon(
-                                    painter = painterResource(R.drawable.eraser),
-                                    contentDescription = "Eraser"
-                                )
                             },
-                            onClick = {
+                            colors = selectedColors
+                        ) {
+                            Icon(
+                                Icons.Outlined.Brush,
+                                contentDescription = "Brush"
+                            )
+                        }
+                        // Eraser
+                        IconToggleButton(
+                            checked = eraseMode,
+                            onCheckedChange = {
                                 eraseMode = true
                                 colorSelectionMenu = false
+                            },
+                            colors = selectedColors
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.eraser),
+                                contentDescription = "Eraser"
+                            )
+                        }
+
+                        // Brush Shape
+                        var shapeMenuOpen by remember { mutableStateOf(false)}
+                        Box {
+                            IconButton(onClick = { shapeMenuOpen = true }){
+                                BrushShapeIcon(brushShape)
                             }
-                        )
-                        BrushShapeSelectionButton(BrushShape.LINE, canvasViewModel::setBrushShape)
-                        BrushShapeSelectionButton(BrushShape.CIRCLE, canvasViewModel::setBrushShape)
-                        BrushShapeSelectionButton(BrushShape.SQUARE, canvasViewModel::setBrushShape)
+                            DropdownMenu(
+                                expanded = shapeMenuOpen,
+                                onDismissRequest = { shapeMenuOpen = false}
+                            ) {
+                                BrushShape.entries.forEach { shape ->
+                                    DropdownMenuItem(
+                                        text = { Text(shape.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                                        leadingIcon = { BrushShapeIcon(shape) },
+                                        onClick = {
+                                            canvasViewModel.setBrushShape(shape)
+                                            shapeMenuOpen = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Brush Size
+                        var sizeMenuOpen by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { sizeMenuOpen = true }) {
+                                Box(
+                                    Modifier
+                                        .size(brushSize.coerceIn(4f, 24f).dp)
+                                        .background(LocalContentColor.current, CircleShape)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = sizeMenuOpen,
+                                onDismissRequest = { sizeMenuOpen = false }
+                            ) {
+                                Column(Modifier.width(220.dp).padding(horizontal = 16.dp)) {
+                                    Text("Brush size: ${brushSize.toInt()}")
+                                    Slider(
+                                        value = brushSize.coerceIn(4f, 48f),
+                                        onValueChange = { canvasViewModel.setBrushSize(it.roundToInt().toFloat()) },
+                                        valueRange = 4f..48f,
+                                        modifier = Modifier.testTag("brushSizeSlider")
+                                    )
+                                }
+                            }
+                        }
+
+                        // AI Analysis
                         IconButton (
                             content = {
                                 Icon(
@@ -251,50 +311,6 @@ fun CanvasScreen(
                                 }
                             }
                         )
-                        var expanded by remember { mutableStateOf(false) }
-                        val presetSizes = listOf("4", "8", "12", "16", "20", "24", "28", "32", "36", "40", "44", "48")
-                        var brushSizeInput by remember { mutableStateOf(brushSize.toInt().toString()) }
-
-                        Box(modifier = Modifier
-                            .width(105.dp)
-                            .border(width = 2.dp, color = LocalContentColor.current)
-                        )
-                        {
-                            OutlinedTextField(
-                                modifier = Modifier.fillMaxWidth()
-                                    .testTag("brushSizeField"),
-                                value = brushSizeInput,
-                                onValueChange = { newSize ->
-                                    brushSizeInput = newSize
-                                    if (newSize.all { it.isDigit() } && newSize.isNotEmpty() && newSize.length <= 2) {
-                                        canvasViewModel.setBrushSize(newSize.toFloat())
-                                    }
-                                },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                trailingIcon = {
-                                    IconButton(onClick = { expanded = !expanded }) {
-                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                                    }
-                                }
-                            )
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                presetSizes.forEach { size ->
-                                    DropdownMenuItem(
-                                        text = { Text(size) },
-                                        onClick = {
-                                            brushSizeInput = size
-                                            expanded = false
-                                            canvasViewModel.setBrushSize(size.toFloat())
-                                        },
-                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -397,35 +413,12 @@ fun ColorSelectionButton(color: Color, selectionFunction: (Color) -> Unit) {
 
 /**
  * Used to create set shapes that can be selected to draw with
- *
- * @param brushShape The selected brush shape
- * @param selectionFunction the function used to select a brush shape
  */
 @Composable
-fun BrushShapeSelectionButton(brushShape: BrushShape, selectionFunction: (BrushShape) -> Unit) {
-    IconButton(
-        content = {
-            when (brushShape) {
-                BrushShape.LINE -> {
-                    Icon(
-                        painter = painterResource(R.drawable.line),
-                        contentDescription = "Eraser"
-                    )
-                }
-                BrushShape.CIRCLE -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Circle,
-                        contentDescription = "Circle"
-                    )
-                }
-                BrushShape.SQUARE -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Square,
-                        contentDescription = "Square"
-                    )
-                }
-            }
-        },
-        onClick = { selectionFunction(brushShape) }
-    )
+fun BrushShapeIcon(shape: BrushShape) {
+    when (shape) {
+        BrushShape.LINE -> Icon(painterResource(R.drawable.line), contentDescription = "Line")
+        BrushShape.CIRCLE -> Icon(Icons.Outlined.Circle, contentDescription = "Circle")
+        BrushShape.SQUARE -> Icon(Icons.Outlined.Square, contentDescription = "Square")
+    }
 }
