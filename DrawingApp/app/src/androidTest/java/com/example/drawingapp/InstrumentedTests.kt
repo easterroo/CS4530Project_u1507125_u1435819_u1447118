@@ -1,8 +1,12 @@
+package com.example.drawingapp
+
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -12,9 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.drawingapp.AppNavigation
 import com.example.drawingapp.canvas.CanvasViewModel
-import com.example.drawingapp.DrawingViewModelProvider
 import com.example.drawingapp.library.LibraryViewModel
 
 import org.junit.Test
@@ -33,7 +35,6 @@ import org.junit.Rule
 class NavigationInstrumentedTest {
     @get: Rule
     val composeTestRule = createComposeRule()
-
     private lateinit var navController: TestNavHostController
 
     @Before
@@ -106,7 +107,7 @@ class NavigationInstrumentedTest {
         composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
         composeTestRule.onNodeWithText("test2").assertIsDisplayed()
 
-        composeTestRule.onNodeWithTag("drawingCard").performClick()
+        composeTestRule.onAllNodesWithTag("drawingCard").onLast().performClick()
         composeTestRule.onNodeWithText("test2").performClick()
         composeTestRule.onNodeWithTag("titleField").performTextReplacement("reopened")
         composeTestRule.onNodeWithText("Done").performClick()
@@ -127,10 +128,21 @@ class NavigationInstrumentedTest {
         composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
         composeTestRule.onNodeWithText("test3").assertIsDisplayed()
 
-        composeTestRule.onNodeWithTag("dropdownMenu").performClick()
+        composeTestRule.onAllNodesWithTag("dropdownMenu").onLast().performClick()
         composeTestRule.onNodeWithText("Delete").performClick()
 
         composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
         composeTestRule.onNodeWithText("test3").assertDoesNotExist()
+    }
+
+    @Test
+    fun testAnalysisOpenAndClose() {
+        composeTestRule.onNodeWithText("New Drawing").performClick()
+        composeTestRule.onNodeWithText("Untitled Drawing").performClick()
+
+        composeTestRule.onNodeWithContentDescription("AI Analysis").assertExists()
+        composeTestRule.onNodeWithContentDescription("AI Analysis").performClick()
+        composeTestRule.onNodeWithText("OK").assertExists()
+        composeTestRule.onNodeWithText("OK").performClick()
     }
 }
