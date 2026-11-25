@@ -1,4 +1,4 @@
-package com.example.drawingapp
+package com.example.drawingapp.library
 
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -12,41 +12,60 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import com.example.drawingapp.library.LibraryViewModel
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.drawingapp.DrawingViewModelProvider
+import com.example.drawingapp.auth.AuthDialog
+import com.example.drawingapp.auth.AuthViewModel
 
 /**
  * Main library screen that allows you to add, edit, and delete drawings
  *
  * @param myVM ViewModel used to retrieve the drawings to display
+ * @param authViewModel ViewModel used for user authentication
  * @param onOpenDrawing Calls the correct navigation path when clicked
  * @param onNewDrawing Calls the correct navigation to new drawing
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
-                  onOpenDrawing: (Int) -> Unit = {},
-                  onNewDrawing: () -> Unit = {}) {
+fun LibraryScreen(
+    myVM: LibraryViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel(factory = DrawingViewModelProvider.Factory),
+    onOpenDrawing: (Int) -> Unit = {},
+    onNewDrawing: () -> Unit = {}
+) {
     val drawings by myVM.drawingsSnapshots.collectAsStateWithLifecycle()
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showAuthDialog by remember { mutableStateOf(false) }
+
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) myVM.importImage(uri, context) }
+
+    if (showAuthDialog) {
+        AuthDialog(
+            authViewModel = authViewModel,
+            onDismiss = { showAuthDialog = false },
+            onAuthSuccess = {
+                myVM.syncCloudDrawings(context)
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -55,15 +74,34 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
                 ),
                 title = {
                     Column {
-                        Text("My Drawings")
+                        Text(
+                            if (authState.isLoggedIn && !authState.userEmail.isNullOrBlank()) {
+                                "My Drawings (${authState.userEmail})"
+                            } else {
+                                "My Drawings"
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             TextButton(onClick = onNewDrawing) { Text("New Drawing") }
                             TextButton(onClick = {
                                 picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            }) { Text("Import Image")}
-                            // TODO: TextButton(onClick = onNewDrawing) { Text("Select")}
-                            // TODO: TextButton(onClick = onNewDrawing) { Text("Cloud & Backup")}
-                            // TODO: TextButton(onClick = onNewDrawing) { Text("Sharing")}
+                            }) { Text("Import Image") }
+
+                            if (authState.isLoggedIn) {
+                                TextButton(onClick = { myVM.syncCloudDrawings(context) }) {
+                                    Text("Cloud Sync")
+                                }
+                                TextButton(onClick = { authViewModel.signOut() }) {
+                                    Text("Sign Out")
+                                }
+                            } else {
+                                TextButton(onClick = { showAuthDialog = true }) {
+                                    Text("Sign In")
+                                }
+                            }
                         }
                     }
                 }
@@ -77,13 +115,13 @@ fun LibraryScreen(myVM: LibraryViewModel = viewModel(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(padding)
         ) {
-            items(drawings.entries.toList(), key = {entry -> entry.key}) { drawing ->
+            items(drawings.entries.toList(), key = { entry -> entry.key }) { drawing ->
                 DrawingCard(
                     thumbnail = drawing.value.copy(),
                     title = myVM.getDrawing(drawing.key).title,
                     onOpen = { onOpenDrawing(drawing.key) },
                     onDelete = { myVM.deleteDrawing(drawing.key, context) },
-                    onShare = { myVM.shareDrawing(drawing.key, context)}
+                    onShare = { myVM.shareDrawing(drawing.key, context) }
                 )
             }
         }
@@ -105,7 +143,8 @@ private fun DrawingCard(
     title: String,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
-    onShare: () -> Unit) {
+    onShare: () -> Unit
+) {
     var menuOpen by remember { mutableStateOf(false) }
 
     Column {
@@ -132,7 +171,8 @@ private fun DrawingCard(
                 Box(Modifier.align(Alignment.TopEnd)) {
                     IconButton(
                         onClick = { menuOpen = true },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            .size(32.dp)
                             .testTag("dropdownMenu")
                     ) {
                         Text("⋮")
@@ -151,7 +191,7 @@ private fun DrawingCard(
                         DropdownMenuItem(
                             text = { Text("Export") },
                             onClick = {
-                                menuOpen = false;
+                                menuOpen = false
                                 onShare()
                             }
                         )

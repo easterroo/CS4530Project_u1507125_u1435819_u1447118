@@ -3,6 +3,7 @@ package com.example.drawingapp
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.drawingapp.auth.AuthViewModel
 import com.example.drawingapp.canvas.CanvasViewModel
 import com.example.drawingapp.library.LibraryViewModel
 
@@ -18,7 +19,15 @@ object DrawingViewModelProvider {
             val app = (this[AndroidViewModelFactory.APPLICATION_KEY] as DrawingApplication)
             LibraryViewModel(
                 app.drawingRepository,
-                app
+                app,
+                app.authRepository,
+                app.cloudDrawingRepository
+            )
+        }
+        initializer {
+            val app = (this[AndroidViewModelFactory.APPLICATION_KEY] as DrawingApplication)
+            AuthViewModel(
+                app.authRepository
             )
         }
     }

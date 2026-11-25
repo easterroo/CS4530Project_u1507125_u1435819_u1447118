@@ -21,6 +21,8 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.drawingapp.DrawingCanvas
+import com.example.drawingapp.auth.AuthRepository
+import com.example.drawingapp.cloud.CloudDrawingRepository
 import com.example.drawingapp.data.DrawingData
 import com.example.drawingapp.data.DrawingRepository
 import com.example.drawingapp.drawStrokes
@@ -37,7 +39,9 @@ import java.io.File
  */
 class LibraryViewModel(
     private val repository: DrawingRepository,
-    private val application: Application? = null
+    private val application: Application? = null,
+    val authRepository: AuthRepository = AuthRepository(),
+    private val cloudDrawingRepository: CloudDrawingRepository = CloudDrawingRepository()
 ) : ViewModel()
 {
     private val _drawings = MutableStateFlow<Map<Int, ImageBitmap>>(emptyMap())
@@ -157,7 +161,9 @@ class LibraryViewModel(
                 }
             }
 
+            val savedId: Int
             if (existing != null) {
+                savedId = data.id
                 if (finalUriString.isNotEmpty()) {
                     if (existing.filePath.isNotEmpty() && existing.filePath != finalUriString) {
                         try {
@@ -178,7 +184,57 @@ class LibraryViewModel(
                     height = drawing.height,
                     filePath = finalUriString
                 )
-                repository.addDrawing(newDrawingData)
+                savedId = repository.addDrawing(newDrawingData).toInt()
+            }
+
+            // Cloud Backup & Sync: automatically upload saved drawing to Firebase Storage + Firestore if logged in
+            val userId = authRepository.currentUserId
+            if (userId != null && finalUriString.isNotEmpty()) {
+                val imageFile = File(finalUriString)
+                if (imageFile.exists()) {
+                    cloudDrawingRepository.uploadDrawing(
+                        userId = userId,
+                        drawingId = savedId,
+                        title = if (data.title.isNotBlank()) data.title else "Untitled Drawing",
+                        width = drawing.width,
+                        height = drawing.height,
+                        imageFile = imageFile
+                    )
+                }
+            }
+        }
+    }
+
+    /** Sync drawings uploaded by current authenticated user from cloud */
+    fun syncCloudDrawings(context: Context) {
+        val userId = authRepository.currentUserId ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = cloudDrawingRepository.fetchUserDrawings(userId)
+            result.onSuccess { cloudDrawings ->
+                val dir = File(context.filesDir, "drawings").apply { mkdirs() }
+                cloudDrawings.forEach { cloudData ->
+                    val localFile = File(dir, "cloud_drawing_${cloudData.drawingId}_${cloudData.timestamp}.png")
+                    if (!localFile.exists() && cloudData.imageUrl.isNotBlank()) {
+                        cloudDrawingRepository.downloadImageToFile(cloudData.imageUrl, localFile)
+                    }
+                    if (localFile.exists()) {
+                        val existing = repository.getDrawing(cloudData.drawingId)
+                        if (existing == null) {
+                            repository.addDrawing(
+                                DrawingData(
+                                    id = cloudData.drawingId,
+                                    title = cloudData.title,
+                                    width = cloudData.width,
+                                    height = cloudData.height,
+                                    filePath = localFile.absolutePath
+                                )
+                            )
+                        } else {
+                            repository.updateTitle(cloudData.title, cloudData.drawingId)
+                            repository.updateFilePath(localFile.absolutePath, cloudData.drawingId)
+                        }
+                    }
+                }
             }
         }
     }
@@ -218,47 +274,47 @@ class LibraryViewModel(
     fun importImage(uri: Uri, context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-            // 1. Read just the dimensions
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(uri)?.use {
-                BitmapFactory.decodeStream(it, null, bounds)
-            }
-            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@launch
+                // 1. Read just the dimensions
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, bounds)
+                }
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@launch
 
-            // 2. Decode downsampled to avoid out-of-memory on big photos
-            var sample = 1
-            while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 1000) sample *= 2
-            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-            val source = context.contentResolver.openInputStream(uri)?.use {
-                BitmapFactory.decodeStream(it, null, opts)
-            } ?: return@launch
+                // 2. Decode downsampled to avoid out-of-memory on big photos
+                var sample = 1
+                while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 1000) sample *= 2
+                val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+                val source = context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, opts)
+                } ?: return@launch
 
-            // 3. Scale so the longest side is 1000
-            val scale = 1000f / maxOf(source.width, source.height)
-            val w = (source.width * scale).toInt().coerceAtLeast(1)
-            val h = (source.height * scale).toInt().coerceAtLeast(1)
-            val scaled = Bitmap.createScaledBitmap(source, w, h, true)
-            // 4. Flatten onto white (handles transparent PNGs) and save
-            val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            android.graphics.Canvas(out).apply {
-                drawColor(android.graphics.Color.WHITE)
-                drawBitmap(scaled, 0f, 0f, null)
-            }
-            val dir = File(context.filesDir, "drawings").apply { mkdirs() }
-            val file = File(dir, "drawing_${System.currentTimeMillis()}.png")
-            file.outputStream().use { out.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                // 3. Scale so the longest side is 1000
+                val scale = 1000f / maxOf(source.width, source.height)
+                val w = (source.width * scale).toInt().coerceAtLeast(1)
+                val h = (source.height * scale).toInt().coerceAtLeast(1)
+                val scaled = Bitmap.createScaledBitmap(source, w, h, true)
+                // 4. Flatten onto white (handles transparent PNGs) and save
+                val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                android.graphics.Canvas(out).apply {
+                    drawColor(android.graphics.Color.WHITE)
+                    drawBitmap(scaled, 0f, 0f, null)
+                }
+                val dir = File(context.filesDir, "drawings").apply { mkdirs() }
+                val file = File(dir, "drawing_${System.currentTimeMillis()}.png")
+                file.outputStream().use { out.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
-            repository.addDrawing(
-                DrawingData(
-                    title = "Imported Image",
-                    width = w.toFloat(),
-                    height = h.toFloat(),
-                    filePath = file.absolutePath
+                repository.addDrawing(
+                    DrawingData(
+                        title = "Imported Image",
+                        width = w.toFloat(),
+                        height = h.toFloat(),
+                        filePath = file.absolutePath
+                    )
                 )
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

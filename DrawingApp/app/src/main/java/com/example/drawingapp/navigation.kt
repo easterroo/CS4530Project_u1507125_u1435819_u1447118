@@ -18,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.drawingapp.data.DrawingData
 import com.example.drawingapp.canvas.CanvasViewModel
+import com.example.drawingapp.library.LibraryScreen
 import com.example.drawingapp.library.LibraryViewModel
 import com.example.drawingapp.objdetection.ObjectDetectionRepository
 import com.example.drawingapp.objdetection.ObjectDetectionViewModel
