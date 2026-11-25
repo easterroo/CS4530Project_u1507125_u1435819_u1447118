@@ -49,6 +49,12 @@ class LibraryViewModel(
 
     private val _drawingsData = MutableStateFlow<Map<Int, DrawingData>>(emptyMap())
 
+    private val _syncedDrawingIds = MutableStateFlow<Set<Int>>(emptySet())
+    val syncedDrawingIds: StateFlow<Set<Int>> = _syncedDrawingIds.asStateFlow()
+
+    private val _syncErrorMessage = MutableStateFlow<String?>(null)
+    val syncErrorMessage: StateFlow<String?> = _syncErrorMessage.asStateFlow()
+
     init {
         viewModelScope.launch {
             repository.allDrawings.collect { dataList ->
@@ -65,6 +71,10 @@ class LibraryViewModel(
                 _drawings.value = imagesMap
             }
         }
+    }
+
+    fun clearSyncError() {
+        _syncErrorMessage.value = null
     }
 
     fun getDrawing(id: Int): DrawingData {
@@ -192,7 +202,7 @@ class LibraryViewModel(
             if (userId != null && finalUriString.isNotEmpty()) {
                 val imageFile = File(finalUriString)
                 if (imageFile.exists()) {
-                    cloudDrawingRepository.uploadDrawing(
+                    val uploadResult = cloudDrawingRepository.uploadDrawing(
                         userId = userId,
                         drawingId = savedId,
                         title = if (data.title.isNotBlank()) data.title else "Untitled Drawing",
@@ -200,6 +210,11 @@ class LibraryViewModel(
                         height = drawing.height,
                         imageFile = imageFile
                     )
+                    uploadResult.onSuccess {
+                        _syncedDrawingIds.value = _syncedDrawingIds.value + savedId
+                    }.onFailure { exception ->
+                        _syncErrorMessage.value = "Cloud upload failed: ${exception.localizedMessage}"
+                    }
                 }
             }
         }
@@ -207,10 +222,49 @@ class LibraryViewModel(
 
     /** Sync drawings uploaded by current authenticated user from cloud */
     fun syncCloudDrawings(context: Context) {
-        val userId = authRepository.currentUserId ?: return
+        val userId = authRepository.currentUserId
+        if (userId == null) {
+            _syncErrorMessage.value = "Please sign in to sync drawings to the cloud."
+            return
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
+            _syncErrorMessage.value = null
+
+            // 1. Upload local drawings to cloud if not already synced
+            val localDrawings = _drawingsData.value.values.toList()
+            for (drawing in localDrawings) {
+                if (drawing.filePath.isNotBlank()) {
+                    val file = File(drawing.filePath)
+                    if (file.exists()) {
+                        val uploadResult = cloudDrawingRepository.uploadDrawing(
+                            userId = userId,
+                            drawingId = drawing.id,
+                            title = drawing.title,
+                            width = drawing.width,
+                            height = drawing.height,
+                            imageFile = file
+                        )
+                        uploadResult.onSuccess {
+                            _syncedDrawingIds.value = _syncedDrawingIds.value + drawing.id
+                        }.onFailure { exception ->
+                            val msg = exception.localizedMessage ?: "Permission denied"
+                            if (msg.contains("PERMISSION_DENIED", ignoreCase = true) || msg.contains("permission", ignoreCase = true)) {
+                                _syncErrorMessage.value = "Firebase Security Error: Permission denied. Please configure Firestore and Storage rules in Firebase Console."
+                            } else {
+                                _syncErrorMessage.value = "Upload error: $msg"
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Fetch user's drawings from cloud and download any missing local drawings
             val result = cloudDrawingRepository.fetchUserDrawings(userId)
             result.onSuccess { cloudDrawings ->
+                val syncedIds = cloudDrawings.map { it.drawingId }.toSet()
+                _syncedDrawingIds.value = _syncedDrawingIds.value + syncedIds
+
                 val dir = File(context.filesDir, "drawings").apply { mkdirs() }
                 cloudDrawings.forEach { cloudData ->
                     val localFile = File(dir, "cloud_drawing_${cloudData.drawingId}_${cloudData.timestamp}.png")
@@ -235,6 +289,13 @@ class LibraryViewModel(
                         }
                     }
                 }
+            }.onFailure { exception ->
+                val msg = exception.localizedMessage ?: "Permission denied"
+                if (msg.contains("PERMISSION_DENIED", ignoreCase = true) || msg.contains("permission", ignoreCase = true)) {
+                    _syncErrorMessage.value = "Firebase Security Error: Permission denied when accessing Firestore. Please update your Firestore security rules in Firebase Console."
+                } else {
+                    _syncErrorMessage.value = "Cloud sync error: $msg"
+                }
             }
         }
     }
@@ -252,6 +313,7 @@ class LibraryViewModel(
                     }
                 }
             }
+            _syncedDrawingIds.value = _syncedDrawingIds.value - id
             repository.removeDrawing(id)
         }
     }

@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
@@ -48,6 +50,8 @@ fun LibraryScreen(
     onNewDrawing: () -> Unit = {}
 ) {
     val drawings by myVM.drawingsSnapshots.collectAsStateWithLifecycle()
+    val syncedDrawingIds by myVM.syncedDrawingIds.collectAsStateWithLifecycle()
+    val syncErrorMessage by myVM.syncErrorMessage.collectAsStateWithLifecycle()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAuthDialog by remember { mutableStateOf(false) }
@@ -62,6 +66,19 @@ fun LibraryScreen(
             onDismiss = { showAuthDialog = false },
             onAuthSuccess = {
                 myVM.syncCloudDrawings(context)
+            }
+        )
+    }
+
+    if (syncErrorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { myVM.clearSyncError() },
+            title = { Text("Cloud Sync") },
+            text = { Text(syncErrorMessage ?: "") },
+            confirmButton = {
+                Button(onClick = { myVM.clearSyncError() }) {
+                    Text("OK")
+                }
             }
         )
     }
@@ -119,6 +136,7 @@ fun LibraryScreen(
                 DrawingCard(
                     thumbnail = drawing.value.copy(),
                     title = myVM.getDrawing(drawing.key).title,
+                    isSynced = syncedDrawingIds.contains(drawing.key),
                     onOpen = { onOpenDrawing(drawing.key) },
                     onDelete = { myVM.deleteDrawing(drawing.key, context) },
                     onShare = { myVM.shareDrawing(drawing.key, context) }
@@ -134,6 +152,7 @@ fun LibraryScreen(
  *
  * @param thumbnail Image to display on card
  * @param title The title of the drawing
+ * @param isSynced Whether drawing is synced to cloud
  * @param onOpen When card is clicked, opens it up on the canvas
  * @param onDelete When "Delete" is selected from the menu, it is deleted
  */
@@ -141,6 +160,7 @@ fun LibraryScreen(
 private fun DrawingCard(
     thumbnail: ImageBitmap,
     title: String,
+    isSynced: Boolean = false,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
     onShare: () -> Unit
@@ -168,6 +188,17 @@ private fun DrawingCard(
                     contentScale = ContentScale.Inside,
                     modifier = Modifier.fillMaxSize()
                 )
+                if (isSynced) {
+                    Icon(
+                        imageVector = Icons.Default.CloudDone,
+                        contentDescription = "Synced to Cloud",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp)
+                            .size(24.dp)
+                    )
+                }
                 Box(Modifier.align(Alignment.TopEnd)) {
                     IconButton(
                         onClick = { menuOpen = true },
