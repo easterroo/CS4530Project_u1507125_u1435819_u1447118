@@ -213,7 +213,16 @@ class LibraryViewModel(
                     uploadResult.onSuccess {
                         _syncedDrawingIds.value = _syncedDrawingIds.value + savedId
                     }.onFailure { exception ->
-                        _syncErrorMessage.value = "Cloud upload failed: ${exception.localizedMessage}"
+                        val msg = exception.localizedMessage ?: exception.message ?: "Upload failed"
+                        if (msg.contains("terminated the upload session", ignoreCase = true) ||
+                            msg.contains("PERMISSION_DENIED", ignoreCase = true) ||
+                            msg.contains("permission", ignoreCase = true) ||
+                            msg.contains("not authorized", ignoreCase = true)
+                        ) {
+                            _syncErrorMessage.value = "Firebase Storage Error: Upload session terminated. Please check Firebase Storage security rules in Firebase Console."
+                        } else {
+                            _syncErrorMessage.value = "Cloud upload failed: $msg"
+                        }
                     }
                 }
             }
@@ -248,9 +257,13 @@ class LibraryViewModel(
                         uploadResult.onSuccess {
                             _syncedDrawingIds.value = _syncedDrawingIds.value + drawing.id
                         }.onFailure { exception ->
-                            val msg = exception.localizedMessage ?: "Permission denied"
-                            if (msg.contains("PERMISSION_DENIED", ignoreCase = true) || msg.contains("permission", ignoreCase = true)) {
-                                _syncErrorMessage.value = "Firebase Security Error: Permission denied. Please configure Firestore and Storage rules in Firebase Console."
+                            val msg = exception.localizedMessage ?: exception.message ?: "Permission denied"
+                            if (msg.contains("terminated the upload session", ignoreCase = true) ||
+                                msg.contains("PERMISSION_DENIED", ignoreCase = true) ||
+                                msg.contains("permission", ignoreCase = true) ||
+                                msg.contains("not authorized", ignoreCase = true)
+                            ) {
+                                _syncErrorMessage.value = "Firebase Security Error: Upload session terminated or permission denied. Please configure Firebase Storage security rules in Firebase Console."
                             } else {
                                 _syncErrorMessage.value = "Upload error: $msg"
                             }
