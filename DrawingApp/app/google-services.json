@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "142925112228",
+    "project_id": "drawingapp-7f34b",
+    "storage_bucket": "drawingapp-7f34b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:142925112228:android:f09bf83b93d262d6d71731",
+        "android_client_info": {
+          "package_name": "com.example.drawingapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC701-UGlHYSmQeGOBe6pF4yQ1vWkl3VLI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
